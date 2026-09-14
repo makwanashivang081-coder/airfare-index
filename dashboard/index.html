@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>India Airfare Price Index · AirPriceX</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Serif:wght@500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/assets/app.css?v=6" />
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+
+  <header class="top">
+    <div class="top-inner">
+      <div class="brand">
+        <span class="brand-mark">AIRPRICEX</span>
+        <span class="brand-name">India Airfare Price Index</span>
+        <span class="brand-code">APIx</span>
+      </div>
+      <div class="top-meta">
+        <span class="pill warn" id="proto-pill">Prototype · not official CPI</span>
+        <span class="top-asof" id="asof">as of —</span>
+      </div>
+    </div>
+    <p class="top-line">A government-facing fare intelligence series. Collects a fixed basket, trusts the quotes, then publishes two outputs: a high-frequency market index and a CPI-compatible index that can augment MoSPI/NSO — not replace them, and not a booking site.</p>
+  </header>
+
+  <nav class="tabs" aria-label="Sections">
+    <button type="button" class="tab is-on" data-tab="overview">Overview</button>
+    <button type="button" class="tab" data-tab="realtime">Real-time market</button>
+    <button type="button" class="tab" data-tab="cpi">CPI-compatible</button>
+    <button type="button" class="tab" data-tab="quotes">Quote inspector</button>
+    <button type="button" class="tab" data-tab="method">Sources</button>
+  </nav>
+
+  <div id="boot" class="boot">Loading the index desk…</div>
+  <div id="crash" class="boot crash" hidden></div>
+
+  <main id="main" hidden>
+    <section class="kpis" aria-label="Published series">
+      <article class="kpi">
+        <p class="kpi-kicker">Series B · CPI-compatible</p>
+        <p class="kpi-label">National APIx</p>
+        <p class="kpi-value" id="kpi-index">—</p>
+        <p class="kpi-delta" id="kpi-delta"></p>
+        <p class="kpi-note" id="kpi-read"></p>
+      </article>
+      <article class="kpi">
+        <p class="kpi-kicker">Series A · Real-time market</p>
+        <p class="kpi-label">Basket T+7 median</p>
+        <p class="kpi-value" id="kpi-t7">—</p>
+        <p class="kpi-delta" id="kpi-cov"></p>
+        <p class="kpi-note">Same-day observed totals across the 8-route domestic basket. This is not the CPI sample. CPI uses T+21 economy from CPI-eligible sources only.</p>
+      </article>
+      <article class="kpi slim">
+        <dl class="facts" id="facts"></dl>
+      </article>
+    </section>
+
+    <section class="callouts" id="callouts" aria-label="How to read this desk"></section>
+
+    <section class="view" data-view="overview realtime cpi">
+      <article class="panel">
+        <div class="panel-head">
+          <div>
+            <h2>Daily CPI-compatible index</h2>
+            <p class="lede">Jevons elementary index, T+21 domestic economy, chained from first complete month = 100. Hover a day. Shaded bands are documented fixture shocks, not live news.</p>
+          </div>
+          <div class="legend" id="chart-legend"></div>
+        </div>
+        <div id="national-chart" class="chart-host"></div>
+      </article>
+    </section>
+
+    <section class="split view" data-view="overview realtime">
+      <article class="panel">
+        <div class="panel-head">
+          <div>
+            <h2>Domestic basket</h2>
+            <p class="lede">Click a route. T+7 is the real-time marker. CPI index is the route’s chained T+21 series. Weights are CPI expenditure-style, not passenger counts.</p>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table class="data" id="route-table">
+            <thead>
+              <tr>
+                <th>Route</th>
+                <th class="num hide-sm">Weight</th>
+                <th>Region</th>
+                <th class="num">T+7</th>
+                <th class="num hide-sm">CPI</th>
+                <th>Vol</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </article>
+      <article class="panel" id="route-detail">
+        <div class="panel-head">
+          <div>
+            <h2 id="detail-title">Fare escalation</h2>
+            <p class="lede" id="detail-lede">Same route, many booking windows. Real-time path — not the CPI sample.</p>
+          </div>
+          <div class="stat-pills">
+            <div id="detail-pills"></div>
+            <button type="button" class="chip-btn" id="open-quotes">Inspect quotes</button>
+          </div>
+        </div>
+        <div id="curve-chart" class="chart-host"></div>
+        <div class="lead-grid" id="lead-grid"></div>
+      </article>
+    </section>
+
+    <section class="split view" data-view="overview cpi">
+      <article class="panel">
+        <div class="panel-head">
+          <div>
+            <h2>Regional CPI index</h2>
+            <p class="lede">Modified Laspeyres-style roll-up of route Jevons. A spike here is usually one corridor, not “the east in general.”</p>
+          </div>
+        </div>
+        <div id="region-chart" class="chart-host short"></div>
+        <p class="footnote" id="region-note"></p>
+      </article>
+      <article class="panel">
+        <div class="panel-head">
+          <div>
+            <h2>Monthly chain</h2>
+            <p class="lede">Last observation in each month. This is what a CPI-compatible bulletin would quote.</p>
+          </div>
+        </div>
+        <div class="month-row" id="months"></div>
+      </article>
+    </section>
+
+    <section class="view" data-view="quotes">
+      <article class="panel">
+        <div class="panel-head">
+          <div>
+            <h2 id="quotes-title">Observed quotes</h2>
+            <p class="lede" id="quotes-lede">Every collected fare for the selected route on this as-of day. CPI membership is a rule, not a vibe.</p>
+          </div>
+          <div class="filters" id="fare-filters">
+            <label class="route-pick">Route
+              <select id="quote-route"></select>
+            </label>
+            <button type="button" class="chip-btn is-on" data-filter="all">All</button>
+            <button type="button" class="chip-btn" data-filter="cpi">CPI sample</button>
+            <button type="button" class="chip-btn" data-filter="market">Market only</button>
+          </div>
+        </div>
+        <p class="rule-strip" id="cpi-rule"></p>
+        <div class="table-wrap">
+          <table class="data" id="fare-table">
+            <thead>
+              <tr>
+                <th>Source</th>
+                <th>CPI</th>
+                <th class="num">Lead</th>
+                <th class="num">Total</th>
+                <th>Carrier</th>
+                <th class="hide-sm">Flight</th>
+                <th class="hide-sm">Departs</th>
+                <th class="hide-sm">Quality</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </article>
+    </section>
+
+    <section class="view" data-view="method">
+      <div class="method-grid">
+        <article class="panel">
+          <h2>What this is</h2>
+          <p>AirPriceX publishes two series from the same trusted observation store. The scraper never computes an index. The index never talks to Playwright. The desk never queries scraper internals.</p>
+          <ul class="plain">
+            <li>Fixed domestic basket, high-traffic corridors, published weights.</li>
+            <li>Trust path: raw → normalise → identity → quality.</li>
+            <li>Missing is missing. It is never imputed as ₹0.</li>
+            <li>OTAs can inform the real-time market. They cannot enter the CPI sample.</li>
+          </ul>
+        </article>
+        <article class="panel">
+          <h2>CPI-compatible rules</h2>
+          <dl class="facts stacked" id="method-facts"></dl>
+        </article>
+        <article class="panel span-2">
+          <h2>Source registry</h2>
+          <p class="lede">Live HTTP against booking pages is off. Fixture adapters implement the same interface a future Playwright adapter will use.</p>
+          <div class="source-grid" id="source-grid"></div>
+        </article>
+        <article class="panel span-2">
+          <h2>Documented fixture shocks</h2>
+          <p class="lede">These are in the generator so the pipeline can be demonstrated under stress. They are not scraped events.</p>
+          <div class="event-grid" id="event-grid"></div>
+        </article>
+      </div>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <span>AirPriceX · APIx v<span id="foot-ver">—</span></span>
+    <span>Basket <span id="foot-basket">—</span></span>
+    <span>HTTP scrape off · OTA ≠ CPI · missing ≠ 0</span>
+  </footer>
+
+  <script src="/assets/app.js?v=6"></script>
+</body>
+</html>

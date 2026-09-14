@@ -1,0 +1,33 @@
+methodology_version: "1.0.0"
+base_year: 2024
+base_value: 100
+# Prototype observations start 2026-04. Series is chained from first complete
+# month = 100 using CPI 2024 methods. This is not the official MoSPI series.
+prototype_link: "first_complete_month=100"
+domestic:
+  advance_purchase_days: 21
+  cabin: economy
+  trip: oneway
+  adults: 1
+international:
+  advance_purchase_days: 60
+  cabin: economy
+  trip: oneway
+  adults: 1
+realtime_windows: [1, 3, 7, 14, 21, 30, 45, 60]
+elementary_index:
+  method: jevons
+aggregation:
+  method: modified_laspeyres
+quality:
+  reject_below: 0.50
+  warning_below: 0.75
+  excellent_from: 0.90
+missing:
+  policy: skip
+  never_zero: true
+ota_enters_cpi: false
+versions:
+  basket: "2026-Q3"
+  weights: "CPI2024-prototype"
+  parser: "fixture-v1"

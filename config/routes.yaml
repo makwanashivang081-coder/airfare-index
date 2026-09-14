@@ -1,0 +1,16 @@
+basket_id: DOM-2026-Q3
+scope: domestic
+members:
+  - { origin: DEL, destination: BOM, region: west, cpi_weight: 0.22, market_weight: 0.24 }
+  - { origin: DEL, destination: BLR, region: south, cpi_weight: 0.16, market_weight: 0.18 }
+  - { origin: BOM, destination: BLR, region: west, cpi_weight: 0.12, market_weight: 0.14 }
+  - { origin: DEL, destination: CCU, region: east, cpi_weight: 0.10, market_weight: 0.09 }
+  - { origin: BLR, destination: HYD, region: south, cpi_weight: 0.08, market_weight: 0.07 }
+  - { origin: MAA, destination: DEL, region: north, cpi_weight: 0.14, market_weight: 0.12 }
+  - { origin: BOM, destination: HYD, region: west, cpi_weight: 0.09, market_weight: 0.08 }
+  - { origin: MAA, destination: BLR, region: south, cpi_weight: 0.09, market_weight: 0.08 }
+international:
+  basket_id: INT-2026-Q3
+  members:
+    - { origin: DEL, destination: DXB, region: gulf, cpi_weight: 0.55, market_weight: 0.60 }
+    - { origin: BOM, destination: DXB, region: gulf, cpi_weight: 0.45, market_weight: 0.40 }

@@ -1,0 +1,68 @@
+sources:
+  - id: SRC-6E
+    name: IndiGo
+    type: AIRLINE
+    airline_code: "6E"
+    collection_method: FIXTURE
+    adapter: indigo_fixture
+    enabled: true
+    priority: 1
+    can_enter_cpi: true
+    allow_http: false
+    note: CPI-eligible airline. Fixture adapter, same interface as a future live collector.
+  - id: SRC-AI
+    name: Air India
+    type: AIRLINE
+    airline_code: AI
+    collection_method: FIXTURE
+    adapter: air_india_fixture
+    enabled: true
+    priority: 2
+    can_enter_cpi: true
+    allow_http: false
+    note: CPI-eligible airline. Fixture adapter, same interface as a future live collector.
+  - id: SRC-UK
+    name: Vistara
+    type: AIRLINE
+    airline_code: UK
+    collection_method: FIXTURE
+    adapter: vistara_fixture
+    enabled: true
+    priority: 3
+    can_enter_cpi: true
+    allow_http: false
+    note: CPI-eligible airline. Fixture adapter, same interface as a future live collector.
+  - id: SRC-MMT
+    name: MakeMyTrip
+    type: OTA
+    airline_code: null
+    collection_method: FIXTURE
+    adapter: mmt_fixture
+    enabled: true
+    priority: 4
+    can_enter_cpi: false
+    allow_http: false
+    note: OTA is secondary. Cannot enter the CPI index.
+  - id: SRC-YATRA
+    name: Yatra
+    type: OTA
+    airline_code: null
+    collection_method: MANUAL_DROP
+    adapter: null
+    enabled: false
+    priority: 9
+    can_enter_cpi: false
+    allow_http: false
+    health: DISABLED
+    note: No legal public feed. Manual drop only.
+  - id: SRC-DGCA
+    name: DGCA tariff / popular routes
+    type: REGULATOR
+    airline_code: null
+    collection_method: REFERENCE
+    adapter: dgca_reference
+    enabled: true
+    priority: 8
+    can_enter_cpi: false
+    allow_http: false
+    note: Validation / master-data reference. Not a daily scrape.
