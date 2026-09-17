@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/assets/app.css?v=29" />
+  <link rel="stylesheet" href="/assets/app.css?v=30" />
 </head>
 <body>
   <div class="bg"></div>
@@ -15,15 +15,15 @@
     <div class="wrap top-row">
       <div class="brand">
         <span class="logo">AirPriceX</span>
-        <span class="tag">India flight price index</span>
+        <span class="tag">For government stats &amp; policy</span>
       </div>
       <div class="meta" id="asof"></div>
     </div>
   </header>
 
   <nav class="tabs wrap" aria-label="Sections">
-    <button type="button" class="tab is-on" data-tab="home">Story</button>
-    <button type="button" class="tab" data-tab="routes">Prices</button>
+    <button type="button" class="tab is-on" data-tab="home">Why government</button>
+    <button type="button" class="tab" data-tab="routes">Routes</button>
     <button type="button" class="tab" data-tab="live">Live</button>
     <button type="button" class="tab" data-tab="proof">Proof</button>
   </nav>
@@ -36,15 +36,16 @@
     <section class="view" data-view="home">
       <section class="hero">
         <p class="brand-hero">AirPriceX</p>
-        <h1>Is flying getting costlier?</h1>
+        <h1>When airfares jump, government feels it first.</h1>
         <p class="lede">
-          A daily airfare inflation signal for government stats teams —
-          same 8 routes, same rules, one clear number, with receipts you can audit.
+          Higher ticket prices mean higher living costs, pressure on household budgets,
+          and harder questions for MoSPI, finance, and transport policy —
+          long before the monthly CPI print arrives.
         </p>
       </section>
 
       <section class="score">
-        <p class="eyebrow">Today’s index</p>
+        <p class="eyebrow">Today’s airfare inflation read</p>
         <p class="score-value" id="kpi-index">—</p>
         <p class="score-delta" id="kpi-delta"></p>
         <p class="score-note" id="kpi-meaning"></p>
@@ -52,44 +53,63 @@
 
       <section class="panel">
         <div class="panel-top">
-          <h2>How the number moved</h2>
+          <h2>National airfare index</h2>
         </div>
         <div id="national-chart" class="chart"></div>
       </section>
 
       <section class="panel benefit">
-        <h2>Built for government, not ticket shoppers</h2>
-        <div class="gov-compare">
-          <div class="gov-col before">
-            <h3>Today</h3>
-            <ul>
-              <li>Airfare in CPI is slow and hand-collected</li>
-              <li>Hard to compare day to day</li>
-              <li>Hard to defend a spike in review</li>
-            </ul>
-          </div>
-          <div class="gov-col after">
-            <h3>With AirPriceX</h3>
-            <ul>
-              <li>Same basket measured every day</li>
-              <li>One index you can watch between monthly prints</li>
-              <li>Click any quote → saved receipt</li>
-            </ul>
-          </div>
+        <h2>Why this matters to government</h2>
+        <div class="gov-grid">
+          <article>
+            <h3>Inflation &amp; CPI</h3>
+            <p>Airfare sits inside CPI. If it spikes and nobody sees it early, the official story arrives late.</p>
+          </article>
+          <article>
+            <h3>Household costs</h3>
+            <p>Dearer flights hit families, migrant workers, and small businesses that depend on air links.</p>
+          </article>
+          <article>
+            <h3>Tax &amp; fiscal pressure</h3>
+            <p>Ticket taxes and aviation revenue move with fares. Policy teams need a clean daily signal, not guesswork.</p>
+          </article>
+          <article>
+            <h3>Fuel &amp; shocks</h3>
+            <p>Oil, festivals, and corridor disruptions show up in fares first. Daily measurement catches that.</p>
+          </article>
         </div>
-        <p class="hint gov-foot">Augments MoSPI CPI. Does not replace it.</p>
+        <p class="hint gov-foot">AirPriceX augments MoSPI CPI. It does not replace official CPI.</p>
+      </section>
+
+      <section class="panel">
+        <h2>What we give stats teams</h2>
+        <div class="grid-3">
+          <article class="tile">
+            <h2>Same basket daily</h2>
+            <p>8 fixed routes, fixed booking rules — days stay comparable.</p>
+          </article>
+          <article class="tile">
+            <h2>One number</h2>
+            <p>100 = start. Higher = air travel got costlier on this basket.</p>
+          </article>
+          <article class="tile">
+            <h2>Receipt trail</h2>
+            <p>Every index quote can be opened and audited.</p>
+          </article>
+        </div>
       </section>
 
       <div class="actions">
-        <button type="button" class="btn" data-go="proof">See the proof trail</button>
-        <button type="button" class="btn soft" data-go="live">See today’s collects</button>
+        <button type="button" class="btn" data-go="proof">Open proof trail</button>
+        <button type="button" class="btn soft" data-go="routes">See route pressure</button>
       </div>
     </section>
 
     <section class="view" data-view="routes">
       <section class="panel">
         <div class="panel-top">
-          <h2>Routes</h2>
+          <h2>Pick a corridor</h2>
+          <p class="hint">Chart shows that route’s inflation index over time — not a booking tip.</p>
         </div>
         <div class="route-strip" id="route-strip" role="listbox" aria-label="Routes"></div>
       </section>
@@ -97,7 +117,8 @@
       <section class="panel detail-panel">
         <div class="panel-top between">
           <div>
-            <h2 id="detail-title">Booking window</h2>
+            <h2 id="detail-title">Route inflation</h2>
+            <p class="hint" id="detail-sub">How fares on this corridor moved vs the starting point of 100.</p>
           </div>
           <p class="pill" id="detail-pill"></p>
         </div>
@@ -108,14 +129,13 @@
       <section class="panel">
         <div class="panel-top between">
           <div>
-            <h2 id="quotes-title">Fares</h2>
+            <h2 id="quotes-title">Today’s fares on this route</h2>
           </div>
         </div>
         <div class="chips" id="fare-filters">
-          <button type="button" class="chip is-on" data-filter="all">All</button>
-          <button type="button" class="chip" data-filter="cpi">In index</button>
-          <button type="button" class="chip" data-filter="live">Live</button>
-          <button type="button" class="chip" data-filter="market">Market</button>
+          <button type="button" class="chip is-on" data-filter="all">All fares</button>
+          <button type="button" class="chip" data-filter="cpi">Used in inflation index</button>
+          <button type="button" class="chip" data-filter="market">Market check only</button>
         </div>
         <div class="fare-list" id="fare-list"></div>
       </section>
@@ -125,7 +145,7 @@
       <section class="panel">
         <div class="panel-top">
           <h2>Today’s collects</h2>
-          <p class="hint" id="live-note">Live pages collected this morning.</p>
+          <p class="hint" id="live-note">What we measured this morning.</p>
         </div>
         <p class="schedule-banner" id="live-schedule"></p>
         <div class="live-kpis" id="live-kpis"></div>
@@ -156,7 +176,7 @@
 
     <section class="view" data-view="proof">
       <section class="panel proof-hero">
-        <p class="eyebrow">For stats teams</p>
+        <p class="eyebrow">For MoSPI &amp; policy teams</p>
         <h2>We augment official CPI. We do not replace it.</h2>
         <p class="body" id="proof-story">
           Daily measurement, fixed rules, and a receipt for every quote in the index.
@@ -192,6 +212,6 @@
     <span id="foot-mode"></span>
   </footer>
 
-  <script src="/assets/app.js?v=29"></script>
+  <script src="/assets/app.js?v=30"></script>
 </body>
 </html>

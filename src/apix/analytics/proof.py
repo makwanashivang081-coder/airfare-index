@@ -53,26 +53,26 @@ def improvements_payload(session: Session, day: date) -> list[dict]:
     return [
         {
             "id": "daily",
-            "title": "Daily signal",
+            "title": "Catch spikes early",
             "official_pain": "Official airfare in CPI is slow",
             "we_add": "Same basket every day",
-            "why_government_cares": "See airfares move between monthly CPI prints",
+            "why_government_cares": "See corridor shocks before the monthly CPI print",
             "prototype_shows": f"{cpi_obs} index quotes today",
         },
         {
-            "id": "audit",
-            "title": "Audit trail",
+            "id": "fiscal",
+            "title": "Costs & taxes move with fares",
             "official_pain": "Hard to defend a number",
             "we_add": "Click down to a receipt",
-            "why_government_cares": "Every index quote has a saved receipt",
+            "why_government_cares": "Household costs and ticket-tax pressure need a clean daily signal",
             "prototype_shows": f"{with_raw}/{total} linked to raw data",
         },
         {
             "id": "clean",
-            "title": "Clean sample",
+            "title": "Clean inflation sample",
             "official_pain": "Shopping sites muddy official series",
             "we_add": "Airlines in CPI · market kept separate",
-            "why_government_cares": "The inflation path stays clean",
+            "why_government_cares": "Policy and stats teams can trust what enters the index",
             "prototype_shows": f"{cpi_obs} CPI · {market_obs} market",
         },
     ]

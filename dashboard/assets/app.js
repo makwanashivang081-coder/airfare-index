@@ -142,7 +142,7 @@ function renderHome() {
   }
   const higher = vsStart >= 0 ? "higher" : "lower";
   document.getElementById("kpi-meaning").textContent =
-    `${Math.abs(vsStart).toFixed(1)}% ${higher} than the starting point of 100.`;
+    `Air travel on this basket is ${Math.abs(vsStart).toFixed(1)}% ${higher} than the starting point of 100.`;
 
   drawLineChart(
     document.getElementById("national-chart"),
@@ -176,7 +176,7 @@ function renderRouteStrip() {
         <span class="rc-city">${esc(row.origin_city)} → ${esc(row.destination_city)}</span>
         <span class="rc-code">${esc(row.label)}</span>
         <span class="rc-price">${price}</span>
-        <span class="rc-meta">~1 week · index ${idx}</span>
+        <span class="rc-meta">index ${idx}</span>
       </button>`;
     })
     .join("");
@@ -188,29 +188,47 @@ function renderDetail() {
   document.getElementById("detail-title").textContent =
     `${row.origin_city} → ${row.destination_city}`;
   const pill = document.getElementById("detail-pill");
+  const hist = row.index_history || [];
+  const latest = hist.length ? hist[hist.length - 1].value : row.cpi_index;
+  const first = hist.length ? hist[0].value : 100;
   if (pill) {
-    pill.textContent =
-      row.cpi_index == null ? "No route index yet" : `Route index ${row.cpi_index.toFixed(1)}`;
+    if (latest == null) {
+      pill.textContent = "No route index yet";
+    } else {
+      const delta = latest - first;
+      const word = delta >= 0 ? "up" : "down";
+      pill.textContent = `Index ${latest.toFixed(1)} · ${word} ${Math.abs(delta).toFixed(1)} pts`;
+    }
+  }
+  const sub = document.getElementById("detail-sub");
+  if (sub) {
+    sub.textContent = "Route inflation index over time (100 = start). Pick another corridor to compare.";
   }
   drawLineChart(
     document.getElementById("curve-chart"),
-    (row.curve || []).map((c) => ({
-      key: String(c.lead).padStart(2, "0"),
-      y: c.price,
-      label: `${c.lead}d`,
-      fullLabel: `Book ${c.lead} day${c.lead === 1 ? "" : "s"} ahead`,
+    hist.map((h) => ({
+      key: h.period,
+      y: h.value,
+      label: h.period.slice(5),
+      fullLabel: fmtDate(h.period),
     })),
-    { height: 180, formatY: (v) => rupee(v), aria: `Fares by booking window ${row.id}` }
+    {
+      height: 200,
+      baseline: 100,
+      formatY: (v) => v.toFixed(1),
+      aria: `Route inflation index ${row.id}`,
+    }
   );
-  document.getElementById("lead-grid").innerHTML = (row.curve || [])
-    .map(
-      (c) =>
-        `<button type="button" class="lead-chip" data-lead="${c.lead}">
-          <span>${c.lead === 1 ? "Tomorrow" : `${c.lead} days ahead`}</span>
-          <strong>${rupee(c.price)}</strong>
-        </button>`
-    )
-    .join("");
+  // Compact stats instead of flat booking-window chips
+  const start = hist[0];
+  const end = hist[hist.length - 1];
+  document.getElementById("lead-grid").innerHTML = [
+    start ? `<div class="lead-chip"><span>Start</span><strong>${start.value.toFixed(1)}</strong></div>` : "",
+    end ? `<div class="lead-chip"><span>Today</span><strong>${end.value.toFixed(1)}</strong></div>` : "",
+    row.current
+      ? `<div class="lead-chip"><span>Typical fare today</span><strong>${rupee(row.current.price)}</strong></div>`
+      : "",
+  ].join("");
 }
 
 function renderQuotes() {
@@ -226,7 +244,6 @@ function renderQuotes() {
   let rows = state.fares?.fares || [];
   if (state.fareFilter === "cpi") rows = rows.filter((f) => f.can_enter_cpi);
   if (state.fareFilter === "market") rows = rows.filter((f) => !f.can_enter_cpi);
-  if (state.fareFilter === "live") rows = rows.filter((f) => f.is_live);
   if (!rows.length) {
     host.innerHTML = `<p class="chart-empty">Nothing in this filter.</p>`;
     return;
@@ -237,7 +254,7 @@ function renderQuotes() {
       (f) => `<article class="fare-card">
         <div class="fc-top">
           <strong>${esc(f.source_name)}</strong>
-          <span class="badge ${f.can_enter_cpi ? "in" : "out"}">${f.can_enter_cpi ? "in index" : "market"}</span>
+          <span class="badge ${f.can_enter_cpi ? "in" : "out"}">${f.can_enter_cpi ? "in inflation index" : "market check"}</span>
           ${f.is_live ? `<span class="badge live">live</span>` : `<span class="badge">sample</span>`}
         </div>
         <div class="fc-row">

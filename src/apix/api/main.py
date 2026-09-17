@@ -341,6 +341,11 @@ def overview(date: str = Query(AS_OF.isoformat())) -> dict:
                 IndexPointRow,
                 f"{SeriesType.CPI.value}:{IndexLevel.ROUTE.value}:{route.id}:{day.isoformat()}",
             )
+            route_hist = [
+                {"period": h.period, "value": round(h.value, 2)}
+                for h in AnalyticsService().history(session, "route", route.id)
+                if len(h.period) == 10
+            ][-60:]
             current = rt.get("current")
             if current and current.get("price"):
                 t7_prices.append(float(current["price"]))
@@ -358,6 +363,7 @@ def overview(date: str = Query(AS_OF.isoformat())) -> dict:
                     "current": current,
                     "volatility": rt.get("volatility"),
                     "curve": rt.get("curve"),
+                    "index_history": route_hist,
                     "cpi_index": round(cpi_row.value, 2) if cpi_row is not None else None,
                 }
             )
