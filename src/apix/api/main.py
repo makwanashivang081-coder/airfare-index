@@ -392,11 +392,47 @@ def overview(date: str = Query(AS_OF.isoformat())) -> dict:
         proof = proof_for_route(session, "DEL-CCU", day)
         lock = demo_lock()
         live = live_day_payload(session, day)
+        # Translate index → approx ₹ using today's basket median as the money anchor.
+        # Fail closed: no invented fares when median or index is missing.
+        index_now = float(idx.get("index_value") or 0)
+        cost_monthly: list[dict] = []
+        cost_daily: list[dict] = []
+        if realtime_median and index_now > 0:
+            for row in monthly:
+                if row["value"] and row["value"] > 0:
+                    cost_monthly.append(
+                        {
+                            "period": row["period"],
+                            "inr": round(realtime_median * (row["value"] / index_now), 0),
+                            "index": row["value"],
+                        }
+                    )
+            for row in history["points"][-90:]:
+                if row.get("value") and row["value"] > 0:
+                    cost_daily.append(
+                        {
+                            "period": row["period"],
+                            "inr": round(realtime_median * (row["value"] / index_now), 0),
+                            "index": row["value"],
+                        }
+                    )
+            # Ensure today sits on the daily series even if history lags.
+            if not cost_daily or cost_daily[-1]["period"] != day.isoformat():
+                cost_daily.append(
+                    {
+                        "period": day.isoformat(),
+                        "inr": round(realtime_median, 0),
+                        "index": index_now,
+                    }
+                )
         return {
             "as_of": day.isoformat(),
             "demo": lock,
             "index": idx,
             "realtime_median_t7": realtime_median,
+            "typical_ticket_inr": round(realtime_median, 0) if realtime_median else None,
+            "cost_monthly": cost_monthly,
+            "cost_daily": cost_daily,
             "market": market,
             "regions": region_payload,
             "events": events,

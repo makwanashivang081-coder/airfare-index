@@ -45,7 +45,7 @@
       </section>
 
       <section class="score">
-        <p class="eyebrow">Today’s airfare inflation read</p>
+        <p class="eyebrow">Typical ticket on today’s basket</p>
         <p class="score-value" id="kpi-index">—</p>
         <p class="score-delta" id="kpi-delta"></p>
         <p class="score-note" id="kpi-meaning"></p>
@@ -53,9 +53,26 @@
 
       <section class="panel">
         <div class="panel-top">
-          <h2>National airfare index</h2>
+          <h2>Monthly cost in ₹</h2>
+          <p class="hint">What a typical domestic ticket on this basket would have cost each month.</p>
         </div>
-        <div id="national-chart" class="chart"></div>
+        <div id="monthly-cost-chart" class="chart"></div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-top">
+          <h2>Early daily signal in ₹</h2>
+          <p class="hint">Same money view, day by day — catches spikes before the monthly CPI print.</p>
+        </div>
+        <div id="daily-cost-chart" class="chart short"></div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-top">
+          <h2>National airfare index</h2>
+          <p class="hint">Same story as index points (100 = start). Use the ₹ charts above for money.</p>
+        </div>
+        <div id="national-chart" class="chart short"></div>
       </section>
 
       <section class="panel benefit">

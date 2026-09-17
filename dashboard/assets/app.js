@@ -56,7 +56,7 @@ function drawLineChart(host, points, opts = {}) {
       : points;
   const width = 640;
   const height = opts.height || 220;
-  const pad = { l: 44, r: 16, t: 16, b: 28 };
+  const pad = { l: opts.padL || 56, r: 16, t: 16, b: 28 };
   const ys = series.map((p) => p.y).filter((v) => Number.isFinite(v));
   if (ys.length < 1) {
     host.innerHTML = `<p class="chart-empty">No chart data for this day yet.</p>`;
@@ -129,7 +129,9 @@ function renderHome() {
   const demo = data.demo || {};
   document.getElementById("asof").textContent = fmtDate(data.as_of);
   document.getElementById("foot-mode").textContent = "";
-  document.getElementById("kpi-index").textContent = value.toFixed(2);
+  const ticketInr = data.typical_ticket_inr;
+  document.getElementById("kpi-index").textContent =
+    ticketInr != null ? rupee(ticketInr) : value.toFixed(2);
   const delta = document.getElementById("kpi-delta");
   if (idx.change_mom == null) {
     delta.textContent = "";
@@ -138,11 +140,42 @@ function renderHome() {
     const dir = idx.change_mom > 0 ? "up" : idx.change_mom < 0 ? "down" : "";
     const word = idx.change_mom > 0 ? "up" : idx.change_mom < 0 ? "down" : "flat";
     delta.className = "score-delta " + dir;
-    delta.textContent = `${word} ${Math.abs(idx.change_mom).toFixed(1)}% vs last month`;
+    let moneyBit = "";
+    if (ticketInr != null && Number.isFinite(idx.change_mom)) {
+      const lastMonth = Math.round(ticketInr / (1 + idx.change_mom / 100));
+      moneyBit = ` · was about ${rupee(lastMonth)} last month`;
+    }
+    delta.textContent = `${word} ${Math.abs(idx.change_mom).toFixed(1)}% vs last month${moneyBit}`;
   }
   const higher = vsStart >= 0 ? "higher" : "lower";
   document.getElementById("kpi-meaning").textContent =
-    `Air travel on this basket is ${Math.abs(vsStart).toFixed(1)}% ${higher} than the starting point of 100.`;
+    ticketInr != null
+      ? `Households pay about ${rupee(ticketInr)} for a typical ticket on this basket today. Air travel is ${Math.abs(vsStart).toFixed(1)}% ${higher} than the start of the series.`
+      : `Air travel on this basket is ${Math.abs(vsStart).toFixed(1)}% ${higher} than the starting point of 100.`;
+
+  const monthPts = (data.cost_monthly || []).map((h) => ({
+    key: h.period,
+    y: h.inr,
+    label: h.period.slice(2),
+    fullLabel: h.period,
+  }));
+  drawLineChart(document.getElementById("monthly-cost-chart"), monthPts, {
+    height: 220,
+    formatY: (v) => "₹" + Math.round(v).toLocaleString("en-IN"),
+    aria: "Monthly typical ticket cost in rupees",
+  });
+
+  const dayPts = (data.cost_daily || []).map((h) => ({
+    key: h.period,
+    y: h.inr,
+    label: h.period.slice(5),
+    fullLabel: fmtDate(h.period),
+  }));
+  drawLineChart(document.getElementById("daily-cost-chart"), dayPts, {
+    height: 180,
+    formatY: (v) => "₹" + Math.round(v).toLocaleString("en-IN"),
+    aria: "Daily typical ticket cost in rupees",
+  });
 
   drawLineChart(
     document.getElementById("national-chart"),
@@ -152,7 +185,7 @@ function renderHome() {
       label: h.period.slice(5),
       fullLabel: fmtDate(h.period),
     })),
-    { baseline: 100, formatY: (v) => v.toFixed(1), aria: "Daily airfare index" }
+    { height: 160, baseline: 100, formatY: (v) => v.toFixed(1), aria: "Daily airfare index" }
   );
   renderModeBanner();
 }
