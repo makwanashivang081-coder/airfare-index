@@ -1,0 +1,21 @@
+{
+  "trips": [
+    {
+      "flights": [
+        {
+          "flightNumber": "6E2341",
+          "fares": [
+            {"totalAmount": 4599, "currency": "INR", "cabin": "ECONOMY"},
+            {"totalAmount": 6120, "currency": "INR", "cabin": "ECONOMY"}
+          ]
+        },
+        {
+          "flightNumber": "6E201",
+          "fares": [
+            {"totalAmount": 3899, "currency": "INR", "cabin": "ECONOMY"}
+          ]
+        }
+      ]
+    }
+  ]
+}

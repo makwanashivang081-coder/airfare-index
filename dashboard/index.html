@@ -3,130 +3,243 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>AirPriceX — India Airfare Index</title>
+  <title>AirPriceX — Is flying getting costlier?</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Serif:wght@600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/assets/app.css?v=7" />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/assets/app.css?v=28" />
 </head>
 <body>
+  <div class="bg"></div>
   <header class="top">
-    <div class="top-inner">
+    <div class="wrap top-row">
       <div class="brand">
-        <strong>AirPriceX</strong>
-        <span>India Airfare Index</span>
+        <span class="logo">AirPriceX</span>
+        <span class="tag">India flight price index</span>
       </div>
-      <div class="top-asof" id="asof"></div>
+      <div class="meta" id="asof"></div>
     </div>
   </header>
 
-  <nav class="tabs" aria-label="Sections">
-    <button type="button" class="tab is-on" data-tab="home">Home</button>
-    <button type="button" class="tab" data-tab="routes">Routes</button>
-    <button type="button" class="tab" data-tab="about">What this means</button>
+  <nav class="tabs wrap" aria-label="Sections">
+    <button type="button" class="tab is-on" data-tab="home">Story</button>
+    <button type="button" class="tab" data-tab="routes">Prices</button>
+    <button type="button" class="tab" data-tab="live">Live</button>
+    <button type="button" class="tab" data-tab="proof">Proof</button>
   </nav>
 
+  <div id="mode-banner" class="mode wrap" hidden></div>
   <div id="boot" class="boot">Loading…</div>
   <div id="crash" class="boot crash" hidden></div>
 
-  <main id="main" hidden>
+  <main id="main" class="wrap" hidden>
     <section class="view" data-view="home">
-      <article class="hero">
-        <p class="kicker">Airfare index</p>
-        <p class="hero-value" id="kpi-index">—</p>
-        <p class="hero-delta" id="kpi-delta"></p>
-        <p class="meaning" id="kpi-meaning"></p>
-      </article>
+      <section class="hero">
+        <p class="brand-hero">AirPriceX</p>
+        <h1>A daily airfare inflation signal for government — not a booking tip.</h1>
+        <p class="lede">
+          Official CPI airfare is slow and hand-collected. We measure the <strong>same 8 routes
+          with the same rules every day</strong>, turn them into <strong>one number</strong>,
+          and keep a receipt trail MoSPI-style users can audit.
+          Travellers already know “book early.” That is not what we sell.
+        </p>
+      </section>
 
-      <article class="panel">
-        <h2>How the index moved</h2>
-        <p class="meaning">The dashed line is 100 — the starting month. Hover a point to see that day’s index.</p>
-        <div id="national-chart" class="chart-host"></div>
-      </article>
-
-      <article class="panel">
-        <h2>Today’s fares</h2>
-        <p class="meaning">Click a route. “7-day fare” is the typical price if you book about a week before flying.</p>
-        <div class="table-wrap">
-          <table class="data" id="route-table">
-            <thead>
-              <tr>
-                <th>Route</th>
-                <th class="num" title="Typical price when booking ~7 days ahead">7-day fare</th>
-                <th class="num" title="That route’s own index. 100 = start of the series.">Route index</th>
-              </tr>
-            </thead>
-            <tbody></tbody>
-          </table>
+      <section class="panel benefit">
+        <h2>How government benefits (one concrete example)</h2>
+        <div class="gov-compare">
+          <div class="gov-col before">
+            <h3>Without AirPriceX</h3>
+            <p>MoSPI officer asks: “Did airfares jump after the festival?”</p>
+            <ul>
+              <li>Wait for the <strong>monthly</strong> CPI print</li>
+              <li>Or do one-off website checks that are <strong>not comparable</strong> day to day</li>
+              <li>Hard to show a reviewer <strong>why</strong> the airfare piece moved</li>
+            </ul>
+          </div>
+          <div class="gov-col after">
+            <h3>With AirPriceX</h3>
+            <p>Same question, same week:</p>
+            <ul>
+              <li>Open the <strong>daily index</strong> for each day (same 8 routes, same ~21-day rule)</li>
+              <li>Open <strong>DEL→CCU</strong> (or any route) — see if that corridor spiked</li>
+              <li>Click any quote → <strong>saved receipt</strong> for audit</li>
+            </ul>
+          </div>
         </div>
-        <p class="footnote" id="table-note"></p>
-      </article>
+        <p class="hint gov-foot">
+          We do <strong>not</strong> replace official MoSPI CPI. We give stats teams a daily, same-rules signal
+          so they are not blind between monthly releases. Travellers are not the customer.
+        </p>
+      </section>
+
+      <section class="grid-3">
+        <article class="tile">
+          <h2>1. Same basket daily</h2>
+          <p>8 busy routes, fixed rules — days stay comparable.</p>
+        </article>
+        <article class="tile">
+          <h2>2. One index</h2>
+          <p>100 = start. Higher = flying got costlier on this basket.</p>
+        </article>
+        <article class="tile">
+          <h2>3. Audit trail</h2>
+          <p>Click from the number down to a saved fare receipt.</p>
+        </article>
+      </section>
+
+      <section class="score">
+        <p class="eyebrow">Today’s inflation read (not a deal finder)</p>
+        <p class="score-value" id="kpi-index">—</p>
+        <p class="score-delta" id="kpi-delta"></p>
+        <p class="score-note" id="kpi-meaning"></p>
+      </section>
+
+      <section class="panel">
+        <div class="panel-top">
+          <h2>How the inflation number moved</h2>
+          <p class="hint">This chart is the product. Dashed line = 100 (demo start).</p>
+        </div>
+        <div id="national-chart" class="chart"></div>
+      </section>
+
+      <section class="panel why">
+        <h2>Quick answers</h2>
+        <div class="qa">
+          <div>
+            <h3>Why not more routes?</h3>
+            <p>Inflation needs a fixed basket. Expanding routes later = separate market watch, not a new CPI number mid-stream.</p>
+          </div>
+          <div>
+            <h3>Why show booking windows?</h3>
+            <p>Only as a check that the sample is healthy. The headline is the daily index — not “when to buy a ticket.”</p>
+          </div>
+          <div>
+            <h3>Live scrapers?</h3>
+            <p>Own collectors. Captcha → stop (no bypass) → sample fallback. Honesty over fake completeness.</p>
+          </div>
+        </div>
+      </section>
+
+      <div class="actions">
+        <button type="button" class="btn" data-go="proof">See how government benefits</button>
+        <button type="button" class="btn soft" data-go="live">Open live collects</button>
+      </div>
     </section>
 
     <section class="view" data-view="routes">
-      <article class="panel">
-        <div class="panel-head">
-          <div>
-            <h2 id="detail-title">Booking window</h2>
-            <p class="meaning" id="detail-meaning">D+1 = flying tomorrow. D+21 = flying in 3 weeks. Last-minute tickets usually cost more.</p>
-          </div>
-          <label class="route-pick">Route
-            <select id="quote-route"></select>
-          </label>
+      <section class="panel">
+        <div class="panel-top">
+          <h2>Pick a route</h2>
+          <p class="hint">One click → see that route’s index and sample health. Not a deal finder.</p>
         </div>
-        <div id="curve-chart" class="chart-host"></div>
-        <div class="lead-grid" id="lead-grid"></div>
-      </article>
+        <div class="route-strip" id="route-strip" role="listbox" aria-label="Routes"></div>
+      </section>
 
-      <article class="panel">
-        <h2 id="quotes-title">Fares collected today</h2>
-        <p class="meaning">“In index” means this quote is used for the official-style number (airline, economy, booked 21 days ahead). OTA prices are shown for the market but are not in that index.</p>
-        <div class="filters" id="fare-filters">
-          <button type="button" class="chip-btn is-on" data-filter="all">All</button>
-          <button type="button" class="chip-btn" data-filter="cpi">Used in index</button>
-          <button type="button" class="chip-btn" data-filter="market">Not in index</button>
+      <section class="panel detail-panel">
+        <div class="panel-top between">
+          <div>
+            <h2 id="detail-title">Sample health by booking window</h2>
+            <p class="hint">Diagnostic only — shows how the sample looks as departure nears. The inflation product is the daily index on Story.</p>
+          </div>
+          <p class="pill" id="detail-pill"></p>
         </div>
-        <div class="table-wrap">
-          <table class="data" id="fare-table">
-            <thead>
-              <tr>
-                <th>Source</th>
-                <th>In index?</th>
-                <th class="num">Book ahead</th>
-                <th class="num">Price</th>
-                <th>Airline</th>
-              </tr>
-            </thead>
-            <tbody></tbody>
-          </table>
+        <div id="curve-chart" class="chart short"></div>
+        <div class="leads" id="lead-grid"></div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-top between">
+          <div>
+            <h2 id="quotes-title">Fares for this route</h2>
+            <p class="hint">Green = in the index. Live badge = airline page today.</p>
+          </div>
         </div>
-      </article>
+        <div class="chips" id="fare-filters">
+          <button type="button" class="chip is-on" data-filter="all">All</button>
+          <button type="button" class="chip" data-filter="cpi">In index</button>
+          <button type="button" class="chip" data-filter="live">Live only</button>
+          <button type="button" class="chip" data-filter="market">Market only</button>
+        </div>
+        <div class="fare-list" id="fare-list"></div>
+      </section>
     </section>
 
-    <section class="view" data-view="about">
-      <article class="panel explain">
-        <h2>What is this?</h2>
-        <p>A demo of an Indian airfare price index. It watches 8 busy domestic routes and turns those fares into one number, like how CPI tracks inflation — but only for flights, and only as a prototype.</p>
-      </article>
-      <article class="panel explain">
-        <h2>What does 100 mean?</h2>
-        <p>The first complete month in the sample is set to 100. If the index is 105, fares in this basket are about 5% higher than that start. It is <strong>not</strong> official MoSPI CPI.</p>
-      </article>
-      <article class="panel explain">
-        <h2>Is this live airline data?</h2>
-        <p>No. These are demo (fixture) fares for 14 Sep 2026 so the pipeline can be judged. Booking websites are not being scraped.</p>
-      </article>
-      <article class="panel explain">
-        <h2>Which fares go into the index?</h2>
-        <p>Airline economy tickets booked 21 days ahead. MakeMyTrip is shown on the market view but cannot enter the CPI-style index. Missing prices are skipped — never treated as ₹0.</p>
-      </article>
-      <article class="panel">
-        <h2>Sources in this demo</h2>
-        <div class="source-list" id="source-list"></div>
-      </article>
+    <section class="view" data-view="live">
+      <section class="panel">
+        <div class="panel-top">
+          <h2>Daily collect board</h2>
+          <p class="hint" id="live-note">Green live = real page read. Grey sample = blocked airline (honest). Market live lives under Google Flights / Ixigo / Cleartrip — not as fake IndiGo/AI live.</p>
+        </div>
+        <p class="schedule-banner" id="live-schedule"></p>
+        <div class="live-kpis" id="live-kpis"></div>
+      </section>
+
+      <section class="panel">
+        <h2>By airline / source</h2>
+        <p class="hint">Only sources with live page reads today. Blocked airlines are summarized below — they still have sample rows for the day.</p>
+        <div class="source-bars" id="live-sources"></div>
+        <p class="blocked-banner" id="live-blocked" hidden></p>
+      </section>
+
+      <section class="panel">
+        <div class="panel-top between">
+          <div>
+            <h2>Every quote collected today (~21 days ahead)</h2>
+            <p class="hint">Filter to see live-only or sample-only. Click a card for the payload.</p>
+          </div>
+        </div>
+        <div class="chips" id="live-filters">
+          <button type="button" class="chip" data-live-filter="all">All</button>
+          <button type="button" class="chip is-on" data-live-filter="live">Live pages</button>
+          <button type="button" class="chip" data-live-filter="sample">Sample fallback</button>
+          <button type="button" class="chip" data-live-filter="cpi">In index</button>
+        </div>
+        <div class="live-grid" id="live-grid"></div>
+        <pre id="live-raw" class="raw" hidden></pre>
+      </section>
+    </section>
+
+    <section class="view" data-view="proof">
+      <section class="panel proof-hero">
+        <p class="eyebrow">For MoSPI / NSO — not travellers</p>
+        <h2>We augment official CPI. We do not replace it.</h2>
+        <p class="body" id="proof-story">
+          Official airfare in CPI is slow. AirPriceX gives a daily, same-rules, auditable signal
+          so stats teams are not blind between monthly prints.
+        </p>
+      </section>
+
+      <section class="panel">
+        <h2>Why government cares</h2>
+        <p class="hint">Three points. Everything else is noise.</p>
+        <div id="improve-list" class="improve"></div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-top between">
+          <div>
+            <h2>Trace one number</h2>
+            <p class="hint" id="proof-summary">National → this route → CPI quote → receipt.</p>
+          </div>
+          <label class="pick">Route
+            <select id="proof-route"></select>
+          </label>
+        </div>
+        <p class="receipt-banner" id="proof-receipt-msg"></p>
+        <div id="proof-chain" class="chain"></div>
+        <div id="proof-receipt" class="receipt-card" hidden></div>
+        <pre id="proof-raw" class="raw" hidden></pre>
+        <button type="button" class="btn soft" id="proof-raw-toggle" hidden>Show raw JSON</button>
+      </section>
     </section>
   </main>
 
-  <script src="/assets/app.js?v=7"></script>
+  <footer class="foot-bar wrap">
+    <span>AirPriceX</span>
+    <span id="foot-mode">Demo</span>
+  </footer>
+
+  <script src="/assets/app.js?v=28"></script>
 </body>
 </html>

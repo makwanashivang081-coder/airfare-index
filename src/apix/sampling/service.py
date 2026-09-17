@@ -14,6 +14,9 @@ class SamplingService:
             return False
         if not source.can_enter_cpi:
             return False
+        # Meta/proxy harvest must never enter CPI even under an airline source_id.
+        if getattr(validated.matched.canonical, "market_only", False):
+            return False
         spec = methodology()["domestic"] if route.scope == "domestic" else methodology()["international"]
         need = int(spec["advance_purchase_days"])
         obs = validated.matched.canonical

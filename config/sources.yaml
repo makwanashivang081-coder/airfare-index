@@ -9,7 +9,7 @@ sources:
     priority: 1
     can_enter_cpi: true
     allow_http: false
-    note: CPI-eligible airline. Fixture adapter, same interface as a future live collector.
+    note: CPI-eligible. IndigoLiveAdapter; Akamai block then sample. Market live under SRC-GFL.
   - id: SRC-AI
     name: Air India
     type: AIRLINE
@@ -20,7 +20,7 @@ sources:
     priority: 2
     can_enter_cpi: true
     allow_http: false
-    note: CPI-eligible airline. Fixture adapter, same interface as a future live collector.
+    note: CPI-eligible. Direct only; site timeout then sample. Market live under SRC-GFL.
   - id: SRC-UK
     name: Vistara
     type: AIRLINE
@@ -31,7 +31,29 @@ sources:
     priority: 3
     can_enter_cpi: true
     allow_http: false
-    note: CPI-eligible airline. Fixture adapter, same interface as a future live collector.
+    note: CPI-eligible. No Vistara booking UI; sample only. Market live under SRC-GFL.
+  - id: SRC-SG
+    name: SpiceJet
+    type: AIRLINE
+    airline_code: SG
+    collection_method: FIXTURE
+    adapter: spicejet_live
+    enabled: true
+    priority: 4
+    can_enter_cpi: true
+    allow_http: false
+    note: Live SpiceJet proven on 8 routes. Day job enables HTTP at runtime; fixture fallback.
+  - id: SRC-QP
+    name: Akasa Air
+    type: AIRLINE
+    airline_code: QP
+    collection_method: FIXTURE
+    adapter: akasa_fixture
+    enabled: true
+    priority: 5
+    can_enter_cpi: true
+    allow_http: false
+    note: CPI-eligible. Dedicated AkasaLiveAdapter (form flow) when ALLOW_LIVE_HTTP; fixture fallback.
   - id: SRC-MMT
     name: MakeMyTrip
     type: OTA
@@ -39,10 +61,43 @@ sources:
     collection_method: FIXTURE
     adapter: mmt_fixture
     enabled: true
-    priority: 4
+    priority: 6
     can_enter_cpi: false
     allow_http: false
-    note: OTA is secondary. Cannot enter the CPI index.
+    note: OTA market-only. Cannot enter CPI. MakeMyTripPublicAdapter when LIVE_MARKET=true.
+  - id: SRC-IXIGO
+    name: Ixigo
+    type: OTA
+    airline_code: null
+    collection_method: FIXTURE
+    adapter: ixigo_fixture
+    enabled: true
+    priority: 7
+    can_enter_cpi: false
+    allow_http: false
+    note: OTA/meta market-only. IxigoMarketAdapter when LIVE_MARKET=true. Cannot enter CPI.
+  - id: SRC-GFL
+    name: Google Flights
+    type: OTA
+    airline_code: null
+    collection_method: FIXTURE
+    adapter: google_flights_fixture
+    enabled: true
+    priority: 7
+    can_enter_cpi: false
+    allow_http: false
+    note: Meta-search market-only. GoogleFlightsMarketAdapter when LIVE_MARKET=true. Cannot enter CPI.
+  - id: SRC-CLEARTRIP
+    name: Cleartrip
+    type: OTA
+    airline_code: null
+    collection_method: FIXTURE
+    adapter: cleartrip_fixture
+    enabled: true
+    priority: 7
+    can_enter_cpi: false
+    allow_http: false
+    note: OTA market-only. CleartripMarketAdapter when LIVE_MARKET=true. Cannot enter CPI.
   - id: SRC-YATRA
     name: Yatra
     type: OTA
@@ -54,7 +109,7 @@ sources:
     can_enter_cpi: false
     allow_http: false
     health: DISABLED
-    note: No legal public feed. Manual drop only.
+    note: No legal public feed. Manual drop only. Skyscanner skipped — captcha wall, no bypass.
   - id: SRC-DGCA
     name: DGCA tariff / popular routes
     type: REGULATOR

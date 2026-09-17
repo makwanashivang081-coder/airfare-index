@@ -1,0 +1,43 @@
+name: daily-apix
+
+# 20:30 UTC = 02:00 IST (Asia/Kolkata)
+on:
+  schedule:
+    - cron: "30 20 * * *"
+  workflow_dispatch:
+
+jobs:
+  collect-and-index:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install
+        run: |
+          python -m pip install -U pip
+          python -m pip install -e ".[dev,live]"
+          python -m playwright install --with-deps chromium
+      - name: Ensure schema
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          PYTHONPATH: src
+        run: python scripts/ensure_schema.py
+      - name: Daily collect at ~2 AM IST (all airlines, fixture fallback)
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          ALLOW_LIVE_HTTP: ${{ vars.ALLOW_LIVE_HTTP || 'true' }}
+          LIVE_AIRLINES: ${{ vars.LIVE_AIRLINES || 'SG,6E,AI,QP' }}
+          LIVE_MARKET: ${{ vars.LIVE_MARKET || 'true' }}
+          PYTHONPATH: src
+          TZ: Asia/Kolkata
+        run: python scripts/run_live_day.py
+      - name: Upload receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: apix-day-${{ github.run_id }}
+          path: |
+            data/live
+            data/apix.db
+          if-no-files-found: warn

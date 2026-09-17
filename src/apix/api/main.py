@@ -10,17 +10,21 @@ from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 
 from apix.analytics.briefing import build_callouts, events_payload, public_methodology
+from apix.analytics.live_day import _inner_payload, is_live_payload, live_day_payload
+from apix.analytics.phases import phases_status
+from apix.analytics.proof import improvements_payload, proof_for_route
 from apix.analytics.service import AnalyticsService
+from apix.common.demo import as_of_date, demo_lock
 from apix.common.enums import IndexLevel, SeriesType
 from apix.common.logging import backend_root
 from apix.common.time import iso_date, month_key
-from apix.db.models import AirlineRow, AirportRow, FareObservationRow, IndexPointRow, RouteRow, SourceRow
-from apix.db.session import get_session
+from apix.db.models import AirlineRow, AirportRow, FareObservationRow, IndexPointRow, RawObservationRow, RouteRow, SourceRow
+from apix.db.session import database_backend, get_session
 from apix.master_data.service import MasterDataService
 from apix.pipeline import Pipeline
 from apix.realtime.service import RealtimeService
 
-AS_OF = date(2026, 9, 14)
+AS_OF = as_of_date()
 DASHBOARD = backend_root() / "dashboard"
 app = FastAPI(title="AirPriceX APIx", version="0.1.0")
 app.add_middleware(
@@ -36,6 +40,11 @@ _ready = False
 def _boot() -> Session:
     global _ready
     session = get_session()
+    # Always refresh master data + source registry (SG/QP etc.) without wiping observations.
+    MasterDataService().seed(session)
+    from apix.source_registry.service import SourceRegistryService
+
+    SourceRegistryService().seed(session)
     n = session.query(IndexPointRow).count()
     if n == 0:
         session.close()
@@ -70,7 +79,19 @@ def health() -> dict:
     try:
         obs = session.query(FareObservationRow).count()
         idx = session.query(IndexPointRow).count()
-        return {"status": "ok", "observations": obs, "index_points": idx, "ready": _ready}
+        lock = demo_lock()
+        return {
+            "status": "ok",
+            "observations": obs,
+            "index_points": idx,
+            "ready": _ready,
+            "as_of": lock["as_of"],
+            "collection_mode": lock["collection_mode"],
+            "allow_live_http": lock["allow_live_http"],
+            "live_data": lock["live_data"],
+            "database_backend": database_backend(),
+            "demo": lock,
+        }
     finally:
         session.close()
 
@@ -118,14 +139,16 @@ def fares(
         )
         sources = {row.id: row for row in session.query(SourceRow).all()}
         airlines = {row.code: row.name for row in session.query(AirlineRow).all()}
-        return {
-            "origin": origin.upper(),
-            "destination": destination.upper(),
-            "collected_on": day.isoformat(),
-            "rule": {
-                "cpi": "Airline source, economy, exact domestic T+21 (international T+60), quality not rejected. OTA cannot enter CPI.",
-            },
-            "fares": [
+        raw_ids = {r.raw_id for r in rows}
+        raws = {
+            row.id: row
+            for row in session.query(RawObservationRow).filter(RawObservationRow.id.in_(raw_ids)).all()
+        } if raw_ids else {}
+        fares_out = []
+        for r in rows:
+            inner = _inner_payload(raws.get(r.raw_id))
+            live = is_live_payload(inner)
+            fares_out.append(
                 {
                     "id": r.id,
                     "source_id": r.source_id,
@@ -146,10 +169,29 @@ def fares(
                     "can_enter_cpi": bool(r.can_enter_cpi),
                     "flight_id": r.flight_id,
                     "raw_id": r.raw_id,
+                    "is_live": live,
+                    "collection": "LIVE" if live else "SAMPLE",
+                    "site": inner.get("site"),
                 }
-                for r in rows
-            ],
+            )
+        return {
+            "origin": origin.upper(),
+            "destination": destination.upper(),
+            "collected_on": day.isoformat(),
+            "rule": {
+                "cpi": "Airline source, economy, exact domestic T+21 (international T+60), quality not rejected. OTA cannot enter CPI.",
+            },
+            "fares": fares_out,
         }
+    finally:
+        session.close()
+
+
+@app.get("/api/v1/live/day")
+def live_day(date: str = Query(AS_OF.isoformat())) -> dict:
+    session = get_session()
+    try:
+        return live_day_payload(session, iso_date(date))
     finally:
         session.close()
 
@@ -259,6 +301,30 @@ def methodology_endpoint() -> dict:
     return public_methodology()
 
 
+@app.get("/api/v1/phases")
+def phases_endpoint() -> dict:
+    return phases_status()
+
+
+@app.get("/api/v1/proof/improvements")
+def proof_improvements(date: str = Query(AS_OF.isoformat())) -> dict:
+    session = get_session()
+    try:
+        day = iso_date(date)
+        return {"as_of": day.isoformat(), "improvements": improvements_payload(session, day)}
+    finally:
+        session.close()
+
+
+@app.get("/api/v1/proof/routes/{route_id}")
+def proof_route(route_id: str, date: str = Query(AS_OF.isoformat())) -> dict:
+    session = get_session()
+    try:
+        return proof_for_route(session, route_id, iso_date(date))
+    finally:
+        session.close()
+
+
 @app.get("/api/v1/analytics/overview")
 def overview(date: str = Query(AS_OF.isoformat())) -> dict:
     session = get_session()
@@ -316,8 +382,13 @@ def overview(date: str = Query(AS_OF.isoformat())) -> dict:
         method = public_methodology()
         t7_prices.sort()
         realtime_median = t7_prices[len(t7_prices) // 2] if t7_prices else None
+        improvements = improvements_payload(session, day)
+        proof = proof_for_route(session, "DEL-CCU", day)
+        lock = demo_lock()
+        live = live_day_payload(session, day)
         return {
             "as_of": day.isoformat(),
+            "demo": lock,
             "index": idx,
             "realtime_median_t7": realtime_median,
             "market": market,
@@ -326,6 +397,10 @@ def overview(date: str = Query(AS_OF.isoformat())) -> dict:
             "callouts": build_callouts(index=idx, regions=region_payload, events=events),
             "methodology": method,
             "monthly": monthly,
+            "improvements": improvements,
+            "proof": proof,
+            "live": live,
+            "phases": phases_status(),
             "sources": [
                 {
                     "id": s.id,

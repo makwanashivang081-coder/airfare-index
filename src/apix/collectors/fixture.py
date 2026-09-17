@@ -15,7 +15,7 @@ BASE_FARE: dict[str, float] = {
     "BOM-DXB": 17600,
 }
 
-AIRLINE_FACTOR = {"6E": 0.96, "AI": 1.08, "UK": 1.03}
+AIRLINE_FACTOR = {"6E": 0.96, "AI": 1.08, "UK": 1.03, "SG": 0.94, "QP": 0.98}
 LEAD_FACTOR = {
     1: 1.48,
     3: 1.34,

@@ -1,8 +1,21 @@
 project: airpricex-apix
-as_of: "2026-09-14"
+as_of: "2026-09-17"
+collection_mode: hybrid
 database_url: sqlite:///./data/apix.db
 raw_store_dir: data/raw
 allow_live_http: false
+collect:
+  local_time: "02:00"
+  timezone: Asia/Kolkata
+  label: "Every day at 2:00 AM India time (GitHub Action)"
+  airlines: "SG+QP direct live; 6E/AI/UK sample when blocked; GFL/Ixigo/Cleartrip market"
+demo:
+  locked: true
+  live_published: true
+  headline: "17 Sep 2026 — honest Live board: SpiceJet+Akasa direct; IndiGo/AI/Vistara sample when blocked; Google Flights market"
+  story_route: "DEL-CCU"
+  story: "Delhi→Kolkata eastern corridor shock ×1.72 on 6–14 Sep 2026. Open Proof for how MoSPI benefits."
+  judge_path: "Story (who benefits) → Live (daily board) → Proof (receipt)"
 api:
   host: 0.0.0.0
   port: 8000

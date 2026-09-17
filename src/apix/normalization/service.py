@@ -39,6 +39,7 @@ class CanonicalFareObservation:
     base_fare: float
     taxes: float
     total_price: float
+    market_only: bool = False
 
 
 def normalize_airport(value: str) -> str:
@@ -76,6 +77,7 @@ class NormalizationService:
         lead = int(query.get("lead") or (departure - collected).days)
         cabin_raw = str(payload.get("cabin") or "economy").lower()
         family = "saver" if "saver" in cabin_raw else "flex" if "flex" in cabin_raw else "economy"
+        market_only = bool(payload.get("market_only") or payload.get("market_proxy"))
         return CanonicalFareObservation(
             raw_id=raw_id,
             source_id=raw.source_id,
@@ -92,4 +94,5 @@ class NormalizationService:
             base_fare=base,
             taxes=taxes,
             total_price=total,
+            market_only=market_only,
         )

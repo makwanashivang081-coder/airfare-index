@@ -2,12 +2,17 @@ const state = {
   data: null,
   tab: "home",
   routeId: null,
+  proofRouteId: "DEL-CCU",
+  proof: null,
   fares: null,
   fareFilter: "all",
+  liveFilter: "live",
   loadingFares: false,
+  loadingProof: false,
+  liveRaw: null,
 };
 
-const TABS = ["home", "routes", "about"];
+const TABS = ["home", "routes", "live", "proof"];
 
 function esc(value) {
   return String(value ?? "").replace(/[&<>"']/g, (ch) => ({
@@ -41,22 +46,30 @@ function selectedRoute() {
 
 function drawLineChart(host, points, opts = {}) {
   host.innerHTML = "";
-  if (!points || points.length < 2) {
-    host.textContent = "Not enough points to chart.";
+  if (!points || !points.length) {
+    host.innerHTML = `<p class="chart-empty">No chart data for this day yet.</p>`;
     return;
   }
+  const series =
+    points.length === 1
+      ? [points[0], { ...points[0], label: points[0].label, fullLabel: points[0].fullLabel }]
+      : points;
   const width = 640;
   const height = opts.height || 220;
   const pad = { l: 44, r: 16, t: 16, b: 28 };
-  const ys = points.map((p) => p.y);
+  const ys = series.map((p) => p.y).filter((v) => Number.isFinite(v));
+  if (ys.length < 1) {
+    host.innerHTML = `<p class="chart-empty">No chart data for this day yet.</p>`;
+    return;
+  }
   const min = opts.min != null ? opts.min : Math.min(...ys);
   const max = opts.max != null ? opts.max : Math.max(...ys);
   const span = max - min || 1;
   const innerW = width - pad.l - pad.r;
   const innerH = height - pad.t - pad.b;
-  const xAt = (i) => pad.l + (i / (points.length - 1)) * innerW;
+  const xAt = (i) => pad.l + (i / Math.max(1, series.length - 1)) * innerW;
   const yAt = (v) => pad.t + (1 - (v - min) / span) * innerH;
-  const line = points.map((p, i) => `${xAt(i)},${yAt(p.y)}`).join(" ");
+  const line = series.map((p, i) => `${xAt(i)},${yAt(p.y)}`).join(" ");
   const area = `${pad.l},${pad.t + innerH} ${line} ${pad.l + innerW},${pad.t + innerH}`;
   let grid = "";
   for (let i = 0; i <= 4; i += 1) {
@@ -65,10 +78,10 @@ function drawLineChart(host, points, opts = {}) {
     grid += `<line class="grid" x1="${pad.l}" x2="${width - pad.r}" y1="${y}" y2="${y}"></line>`;
     grid += `<text class="axis" x="4" y="${y + 3}">${opts.formatY ? opts.formatY(v) : v.toFixed(1)}</text>`;
   }
-  const labelEvery = Math.max(1, Math.ceil(points.length / 6));
+  const labelEvery = Math.max(1, Math.ceil(series.length / 6));
   let xlabels = "";
-  points.forEach((p, i) => {
-    if (i % labelEvery === 0 || i === points.length - 1) {
+  series.forEach((p, i) => {
+    if (i % labelEvery === 0 || i === series.length - 1) {
       xlabels += `<text class="axis" x="${xAt(i)}" y="${height - 8}" text-anchor="middle">${esc(p.label)}</text>`;
     }
   });
@@ -78,13 +91,13 @@ function drawLineChart(host, points, opts = {}) {
     baseline = `<line class="base" x1="${pad.l}" x2="${width - pad.r}" y1="${y}" y2="${y}"></line>`;
   }
   const wrap = document.createElement("div");
-  wrap.style.position = "relative";
+  wrap.className = "chart-wrap";
   wrap.innerHTML = `
     <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="${esc(opts.aria || "Chart")}">
       ${grid}${baseline}${xlabels}
       <polygon class="area" points="${area}"></polygon>
       <polyline class="line" points="${line}"></polyline>
-      <circle class="dot" r="4" cx="${xAt(points.length - 1)}" cy="${yAt(points[points.length - 1].y)}"></circle>
+      <circle class="dot" r="4" cx="${xAt(series.length - 1)}" cy="${yAt(series[series.length - 1].y)}"></circle>
     </svg>
     <div class="tooltip"></div>`;
   host.appendChild(wrap);
@@ -94,8 +107,8 @@ function drawLineChart(host, points, opts = {}) {
   svg.addEventListener("mousemove", (event) => {
     const box = svg.getBoundingClientRect();
     const ratio = (event.clientX - box.left) / box.width;
-    const i = Math.min(points.length - 1, Math.max(0, Math.round(ratio * (points.length - 1))));
-    const p = points[i];
+    const i = Math.min(series.length - 1, Math.max(0, Math.round(ratio * (series.length - 1))));
+    const p = series[i];
     dot.setAttribute("cx", String(xAt(i)));
     dot.setAttribute("cy", String(yAt(p.y)));
     tip.style.display = "block";
@@ -113,59 +126,63 @@ function renderHome() {
   const idx = data.index;
   const value = idx.index_value;
   const vsStart = value - 100;
-  document.getElementById("asof").textContent = fmtDate(data.as_of);
+  const demo = data.demo || {};
+  document.getElementById("asof").textContent =
+    `${fmtDate(data.as_of)} · ${demo.live_data ? "Live mix" : "Demo"}`;
+  document.getElementById("foot-mode").textContent = demo.live_data ? "Live collection on" : "Demo sample prices";
   document.getElementById("kpi-index").textContent = value.toFixed(2);
   const delta = document.getElementById("kpi-delta");
   if (idx.change_mom == null) {
     delta.textContent = "";
-    delta.className = "hero-delta";
+    delta.className = "score-delta";
   } else {
     const dir = idx.change_mom > 0 ? "up" : idx.change_mom < 0 ? "down" : "";
-    const word = idx.change_mom > 0 ? "up" : idx.change_mom < 0 ? "down" : "unchanged";
-    delta.className = "hero-delta " + dir;
+    const word = idx.change_mom > 0 ? "up" : idx.change_mom < 0 ? "down" : "flat";
+    delta.className = "score-delta " + dir;
     delta.textContent = `${word} ${Math.abs(idx.change_mom).toFixed(1)}% vs last month`;
   }
   const higher = vsStart >= 0 ? "higher" : "lower";
   document.getElementById("kpi-meaning").textContent =
-    `100 is the first month in this demo. ${value.toFixed(1)} means fares in this 8-route basket are about ${Math.abs(vsStart).toFixed(1)}% ${higher} than that start.`;
+    `${value.toFixed(1)} on our 8-route basket ≈ ${Math.abs(vsStart).toFixed(1)}% ${higher} than demo start (100). This is an inflation read for stats — not a fare deal.`;
 
-  const points = (data.history || []).map((h) => ({
-    key: h.period,
-    y: h.value,
-    label: h.period.slice(5),
-    fullLabel: fmtDate(h.period),
-  }));
-  drawLineChart(document.getElementById("national-chart"), points, {
-    baseline: 100,
-    formatY: (v) => v.toFixed(1),
-    aria: "Daily airfare index",
-  });
-
-  const east = data.market.find((r) => r.id === "DEL-CCU");
-  const note = document.getElementById("table-note");
-  if (east && east.cpi_index != null && east.cpi_index >= 130) {
-    note.textContent = "Delhi → Kolkata is high in this demo (a built-in shock). That is why the East looks expensive — not a site error.";
-  } else {
-    note.textContent = "";
-  }
+  drawLineChart(
+    document.getElementById("national-chart"),
+    (data.history || []).map((h) => ({
+      key: h.period,
+      y: h.value,
+      label: h.period.slice(5),
+      fullLabel: fmtDate(h.period),
+    })),
+    { baseline: 100, formatY: (v) => v.toFixed(1), aria: "Daily airfare index" }
+  );
+  renderModeBanner();
 }
 
-function renderRoutesTable() {
-  const select = document.getElementById("quote-route");
-  select.innerHTML = state.data.market
-    .map(
-      (row) =>
-        `<option value="${esc(row.id)}" ${row.id === state.routeId ? "selected" : ""}>${esc(row.origin_city)} → ${esc(row.destination_city)}</option>`
-    )
-    .join("");
-  document.querySelector("#route-table tbody").innerHTML = state.data.market
+function renderModeBanner() {
+  const banner = document.getElementById("mode-banner");
+  const demo = state.data?.demo;
+  if (!banner || !demo) return;
+  banner.hidden = false;
+  banner.className = "mode wrap" + (demo.live_data ? " live" : "");
+  banner.innerHTML = demo.live_data
+    ? `<strong>Live mix</strong> ${esc(demo.headline || "Real airline collects where possible")} · ${esc(fmtDate(demo.as_of))}`
+    : `<strong>Demo</strong> Stable sample prices for judges · ${esc(fmtDate(demo.as_of))}`;
+}
+
+function renderRouteStrip() {
+  const host = document.getElementById("route-strip");
+  if (!host) return;
+  host.innerHTML = (state.data.market || [])
     .map((row) => {
       const on = row.id === state.routeId ? "is-on" : "";
-      return `<tr class="${on}" data-route="${esc(row.id)}" tabindex="0">
-        <td><strong>${esc(row.label)}</strong><span class="cities">${esc(row.origin_city)} → ${esc(row.destination_city)}</span></td>
-        <td class="num">${row.current ? rupee(row.current.price) : "—"}</td>
-        <td class="num">${row.cpi_index == null ? "—" : row.cpi_index.toFixed(1)}</td>
-      </tr>`;
+      const price = row.current ? rupee(row.current.price) : "—";
+      const idx = row.cpi_index == null ? "—" : row.cpi_index.toFixed(1);
+      return `<button type="button" class="route-card ${on}" data-route="${esc(row.id)}" role="option" aria-selected="${row.id === state.routeId}">
+        <span class="rc-city">${esc(row.origin_city)} → ${esc(row.destination_city)}</span>
+        <span class="rc-code">${esc(row.label)}</span>
+        <span class="rc-price">${price}</span>
+        <span class="rc-meta">~1 week · index ${idx}</span>
+      </button>`;
     })
     .join("");
 }
@@ -175,19 +192,29 @@ function renderDetail() {
   if (!row) return;
   document.getElementById("detail-title").textContent =
     `${row.origin_city} → ${row.destination_city}`;
-  const points = (row.curve || []).map((c) => ({
-    key: String(c.lead).padStart(2, "0"),
-    y: c.price,
-    label: `${c.lead}d`,
-    fullLabel: `Book ${c.lead} day${c.lead === 1 ? "" : "s"} ahead`,
-  }));
-  drawLineChart(document.getElementById("curve-chart"), points, {
-    height: 180,
-    formatY: (v) => rupee(v),
-    aria: `Fares by booking window ${row.id}`,
-  });
+  const pill = document.getElementById("detail-pill");
+  if (pill) {
+    pill.textContent =
+      row.cpi_index == null ? "No route index yet" : `Route index ${row.cpi_index.toFixed(1)}`;
+  }
+  drawLineChart(
+    document.getElementById("curve-chart"),
+    (row.curve || []).map((c) => ({
+      key: String(c.lead).padStart(2, "0"),
+      y: c.price,
+      label: `${c.lead}d`,
+      fullLabel: `Book ${c.lead} day${c.lead === 1 ? "" : "s"} ahead`,
+    })),
+    { height: 180, formatY: (v) => rupee(v), aria: `Fares by booking window ${row.id}` }
+  );
   document.getElementById("lead-grid").innerHTML = (row.curve || [])
-    .map((c) => `<div><span>${c.lead === 1 ? "Tomorrow" : `${c.lead} days ahead`}</span><strong>${rupee(c.price)}</strong></div>`)
+    .map(
+      (c) =>
+        `<button type="button" class="lead-chip" data-lead="${c.lead}">
+          <span>${c.lead === 1 ? "Tomorrow" : `${c.lead} days ahead`}</span>
+          <strong>${rupee(c.price)}</strong>
+        </button>`
+    )
     .join("");
 }
 
@@ -195,50 +222,281 @@ function renderQuotes() {
   const row = selectedRoute();
   if (!row) return;
   document.getElementById("quotes-title").textContent =
-    `Fares collected · ${row.origin_city} → ${row.destination_city}`;
-  const body = document.querySelector("#fare-table tbody");
+    `Fares · ${row.origin_city} → ${row.destination_city}`;
+  const host = document.getElementById("fare-list");
   if (state.loadingFares) {
-    body.innerHTML = `<tr><td colspan="5">Loading…</td></tr>`;
+    host.innerHTML = `<p class="chart-empty">Loading fares…</p>`;
     return;
   }
   let rows = state.fares?.fares || [];
   if (state.fareFilter === "cpi") rows = rows.filter((f) => f.can_enter_cpi);
   if (state.fareFilter === "market") rows = rows.filter((f) => !f.can_enter_cpi);
+  if (state.fareFilter === "live") rows = rows.filter((f) => f.is_live);
   if (!rows.length) {
-    body.innerHTML = `<tr><td colspan="5">Nothing in this filter.</td></tr>`;
+    host.innerHTML = `<p class="chart-empty">Nothing in this filter.</p>`;
     return;
   }
-  rows.sort((a, b) => a.lead - b.lead || a.total - b.total);
-  body.innerHTML = rows
+  rows = [...rows].sort((a, b) => a.lead - b.lead || a.total - b.total);
+  host.innerHTML = rows
     .map(
-      (f) => `<tr>
-        <td>${esc(f.source_name)}</td>
-        <td><span class="chip ${f.can_enter_cpi ? "in" : "out"}">${f.can_enter_cpi ? "yes" : "no"}</span></td>
-        <td class="num">${f.lead} days</td>
-        <td class="num">${rupee(f.total)}</td>
-        <td>${esc(f.airline_name || f.airline)}</td>
-      </tr>`
+      (f) => `<article class="fare-card">
+        <div class="fc-top">
+          <strong>${esc(f.source_name)}</strong>
+          <span class="badge ${f.can_enter_cpi ? "in" : "out"}">${f.can_enter_cpi ? "in index" : "market"}</span>
+          ${f.is_live ? `<span class="badge live">live</span>` : `<span class="badge">sample</span>`}
+        </div>
+        <div class="fc-row">
+          <span>${esc(f.airline_name || f.airline)} · ${esc(f.flight || "—")}</span>
+          <span class="num">${f.lead}d ahead</span>
+          <span class="num price">${rupee(f.total)}</span>
+        </div>
+      </article>`
     )
     .join("");
 }
 
-function renderAbout() {
-  document.getElementById("source-list").innerHTML = state.data.sources
-    .map((s) => {
-      const role = s.can_enter_cpi ? "used in the index" : s.enabled ? "market only" : "off";
-      return `<div class="source-row"><strong>${esc(s.name)}</strong><span>${esc(role)}</span></div>`;
+function renderLive() {
+  const live = state.data?.live || {
+    live_count: 0,
+    sample_count: 0,
+    total_count: 0,
+    quotes: [],
+    sources: [],
+    schedule: {},
+  };
+  document.getElementById("live-note").textContent = live.note || "";
+  const sched = live.schedule || {};
+  const run = live.run_summary;
+  document.getElementById("live-schedule").innerHTML = `
+    <strong>${esc(sched.label || "Daily collect ~2:00 AM IST")}</strong>
+    · Attempts ${esc(sched.airlines || "all CPI airlines")}
+    ${run ? `· Last run receipt: ${esc(run.collected_on)} · ${run.live_ok ?? 0} live · ${run.fixture_fallback ?? 0} sample` : ""}`;
+
+  document.getElementById("live-kpis").innerHTML = `
+    <div class="lk"><span>Total today</span><strong>${live.total_count ?? live.quotes?.length ?? 0}</strong></div>
+    <div class="lk"><span>Live pages</span><strong>${live.live_count ?? 0}</strong></div>
+    <div class="lk"><span>Sample fallback</span><strong>${live.sample_count ?? 0}</strong></div>
+    <div class="lk"><span>Window</span><strong>~${live.lead ?? 21}d ahead</strong></div>`;
+
+  const sources = live.sources || [];
+  const withLive = sources.filter((s) => (s.live || 0) > 0);
+  const blocked = sources.filter((s) => (s.live || 0) === 0 && (s.sample || 0) > 0);
+  const max = Math.max(1, ...withLive.map((s) => s.live + (s.sample || 0)));
+  document.getElementById("live-sources").innerHTML = withLive.length
+    ? withLive
+        .map((s) => {
+          const livePct = (s.live / max) * 100;
+          const samplePct = ((s.sample || 0) / max) * 100;
+          return `<div class="sb">
+        <div class="sb-label"><strong>${esc(s.source_name)}</strong><span>${s.live} live${s.sample ? ` · ${s.sample} sample` : ""}${s.can_enter_cpi ? "" : " · market"}</span></div>
+        <div class="sb-track">
+          <i class="sb-live" style="width:${livePct}%"></i>
+          <i class="sb-sample" style="width:${samplePct}%"></i>
+        </div>
+      </div>`;
+        })
+        .join("")
+    : `<p class="chart-empty">No live page reads today.</p>`;
+
+  const blockedEl = document.getElementById("live-blocked");
+  if (blockedEl) {
+    if (blocked.length) {
+      const names = blocked.map((s) => s.source_name).join(", ");
+      blockedEl.hidden = false;
+      blockedEl.innerHTML = `<strong>Blocked today — sample only (hidden from bars):</strong> ${esc(names)}`;
+    } else {
+      blockedEl.hidden = true;
+      blockedEl.textContent = "";
+    }
+  }
+
+  // Quote grid defaults to live pages (see state.liveFilter).
+
+  const grid = document.getElementById("live-grid");
+  const rawBox = document.getElementById("live-raw");
+  let rows = live.quotes || [];
+  if (state.liveFilter === "live") rows = rows.filter((q) => q.is_live);
+  if (state.liveFilter === "sample") rows = rows.filter((q) => !q.is_live);
+  if (state.liveFilter === "cpi") rows = rows.filter((q) => q.can_enter_cpi);
+
+  if (!rows.length) {
+    grid.innerHTML = `<p class="chart-empty">Nothing in this filter for today.</p>`;
+    rawBox.hidden = true;
+    return;
+  }
+  grid.innerHTML = rows
+    .map((q, i) => {
+      const idx = (live.quotes || []).indexOf(q);
+      return `<button type="button" class="live-card ${q.is_live ? "is-live" : "is-sample"}" data-live="${idx}">
+        <span class="lc-route">${esc(q.route)}</span>
+        <span class="lc-src">${esc(q.source_name)}${q.site ? " · " + esc(q.site) : ""}</span>
+        <span class="lc-price">${rupee(q.total)}</span>
+        <span class="lc-meta">
+          <span class="badge ${q.is_live ? "live" : ""}">${q.is_live ? "live" : "sample"}</span>
+          <span class="badge ${q.can_enter_cpi ? "in" : "out"}">${q.can_enter_cpi ? "in index" : "market"}</span>
+          ${esc(q.airline_name || q.airline || "")} · ${q.lead}d
+        </span>
+      </button>`;
     })
+    .join("");
+
+  grid.querySelectorAll("[data-live]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      grid.querySelectorAll(".live-card").forEach((n) => n.classList.remove("is-on"));
+      btn.classList.add("is-on");
+      const item = live.quotes[Number(btn.dataset.live)];
+      rawBox.hidden = false;
+      rawBox.textContent = JSON.stringify(
+        {
+          observation_id: item.id,
+          raw_id: item.raw_id,
+          route: item.route,
+          source: item.source_name,
+          collection: item.collection,
+          site: item.site,
+          raw: item.raw,
+        },
+        null,
+        2
+      );
+    });
+  });
+}
+
+function renderImprovements() {
+  const host = document.getElementById("improve-list");
+  const rows = state.data.improvements || [];
+  host.innerHTML = rows
+    .map(
+      (row) => `<article class="improve-card">
+        <h3>${esc(row.title || row.id)}</h3>
+        <p class="improve-pain"><span class="label">Official pain</span>${esc(row.official_pain)}</p>
+        <p class="improve-add"><span class="label">We add</span>${esc(row.we_add)}</p>
+        <p class="improve-why">${esc(row.why_government_cares)}</p>
+        <p class="shows">${esc(row.prototype_shows)}</p>
+      </article>`
+    )
     .join("");
 }
 
-function showTab(tab) {
-  state.tab = tab;
-  document.querySelectorAll(".tab").forEach((btn) => {
-    btn.classList.toggle("is-on", btn.dataset.tab === tab);
+function renderProof() {
+  const select = document.getElementById("proof-route");
+  select.innerHTML = (state.data.market || [])
+    .map(
+      (row) =>
+        `<option value="${esc(row.id)}" ${row.id === state.proofRouteId ? "selected" : ""}>${esc(row.origin_city)} → ${esc(row.destination_city)}</option>`
+    )
+    .join("");
+
+  const proof = state.proof || state.data.proof;
+  const host = document.getElementById("proof-chain");
+  const rawBox = document.getElementById("proof-raw");
+  const receipt = document.getElementById("proof-receipt");
+  const rawToggle = document.getElementById("proof-raw-toggle");
+  const storyEl = document.getElementById("proof-story");
+  const msgEl = document.getElementById("proof-receipt-msg");
+  rawBox.hidden = true;
+  rawBox.textContent = "";
+  receipt.hidden = true;
+  receipt.innerHTML = "";
+  rawToggle.hidden = true;
+
+  if (state.loadingProof) {
+    host.innerHTML = `<div class="step"><p>Loading…</p></div>`;
+    return;
+  }
+  if (!proof) {
+    host.innerHTML = `<div class="step"><p>No proof loaded.</p></div>`;
+    return;
+  }
+
+  if (proof.story) {
+    storyEl.innerHTML = `<strong>${esc(proof.story.headline)}</strong> — ${esc(proof.story.body)}`;
+  } else if (proof.spec?.one_liner) {
+    storyEl.textContent = proof.spec.one_liner;
+  }
+
+  const national = proof.national;
+  const route = proof.route_index;
+  document.getElementById("proof-summary").textContent =
+    "Click a CPI quote → readable receipt. Raw JSON is optional.";
+  msgEl.textContent = proof.receipt?.message || "";
+
+  const steps = [
+    `<div class="step step-num"><strong>1 · National</strong><p>${
+      national ? `<span class="big-num">${national.value}</span> · ${national.n_obs} quotes` : "Not published"
+    }</p></div>`,
+    `<div class="step step-num"><strong>2 · Route ${esc(proof.route_id)}</strong><p>${
+      route ? `<span class="big-num">${route.value}</span> · ${route.n_obs} quotes` : "No route index"
+    }</p></div>`,
+    `<div class="step step-num"><strong>3 · CPI quotes on this route</strong><p>Only airline-direct, T+${proof.spec?.advance_purchase_days ?? 21}, economy. OTAs never appear here.</p></div>`,
+  ];
+
+  const obs = (proof.cpi_observations || [])
+    .map(
+      (o, i) => `<button type="button" class="obs ${o.is_live ? "is-live" : "is-sample"}" data-obs="${i}">
+        <span>${esc(o.source_name)} · ${esc(o.flight)}</span>
+        <span class="badge ${o.is_live ? "live" : ""}">${o.is_live ? "live" : "sample"}</span>
+        <span>${o.lead}d</span>
+        <span class="num">${rupee(o.total)}</span>
+        <span class="badge in">open</span>
+      </button>`
+    )
+    .join("");
+
+  host.innerHTML =
+    steps.join("") +
+    (obs || `<div class="step"><p>No CPI quotes for this route/day (blocked airlines fell back to sample elsewhere).</p></div>`);
+
+  let selected = null;
+  host.querySelectorAll("[data-obs]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      host.querySelectorAll(".obs").forEach((node) => node.classList.remove("is-on"));
+      btn.classList.add("is-on");
+      selected = proof.cpi_observations[Number(btn.dataset.obs)];
+      const inner = selected.raw?.inner || {};
+      receipt.hidden = false;
+      receipt.innerHTML = `
+        <div class="receipt-top">
+          <div>
+            <p class="eyebrow">Saved receipt</p>
+            <h3>${esc(selected.source_name)} · ${esc(selected.flight)}</h3>
+          </div>
+          <p class="receipt-price">${rupee(selected.total)}</p>
+        </div>
+        <dl class="receipt-grid">
+          <div><dt>Route</dt><dd>${esc(proof.route_id)}</dd></div>
+          <div><dt>Lead</dt><dd>T+${selected.lead}</dd></div>
+          <div><dt>Collection</dt><dd>${esc(selected.collection || (selected.is_live ? "LIVE" : "SAMPLE"))}</dd></div>
+          <div><dt>Site</dt><dd>${esc(selected.site || selected.source_name)}</dd></div>
+          <div><dt>Cabin</dt><dd>${esc(selected.cabin || "economy")}</dd></div>
+          <div><dt>Quality</dt><dd>${esc(selected.quality)}</dd></div>
+          <div><dt>Raw id</dt><dd class="mono">${esc(selected.raw_id || "—")}</dd></div>
+          <div><dt>In CPI?</dt><dd>Yes — airline-direct path</dd></div>
+        </dl>
+        <p class="hint">${esc(inner.note || proof.spec?.one_liner || "")}</p>`;
+      rawToggle.hidden = false;
+      rawBox.hidden = true;
+      rawBox.textContent = JSON.stringify(
+        {
+          observation_id: selected.observation_id,
+          raw_id: selected.raw_id,
+          source: selected.source_name,
+          collection: selected.collection,
+          site: selected.site,
+          raw: selected.raw,
+        },
+        null,
+        2
+      );
+    });
   });
-  document.querySelectorAll(".view").forEach((section) => {
-    section.hidden = section.dataset.view !== tab;
-  });
+
+  rawToggle.onclick = () => {
+    if (!selected) return;
+    rawBox.hidden = !rawBox.hidden;
+    rawToggle.textContent = rawBox.hidden ? "Show raw JSON" : "Hide raw JSON";
+  };
 }
 
 async function loadFares(routeId) {
@@ -260,15 +518,48 @@ async function loadFares(routeId) {
   }
 }
 
+async function loadProof(routeId) {
+  state.proofRouteId = routeId;
+  state.loadingProof = true;
+  renderProof();
+  try {
+    const res = await fetch(
+      `/api/v1/proof/routes/${encodeURIComponent(routeId)}?date=${encodeURIComponent(state.data.as_of)}`
+    );
+    if (!res.ok) throw new Error("proof " + res.status);
+    state.proof = await res.json();
+  } catch (err) {
+    state.proof = state.data.proof;
+  } finally {
+    state.loadingProof = false;
+    renderProof();
+  }
+}
+
 function selectRoute(routeId, { openRoutes = false } = {}) {
   state.routeId = routeId;
-  renderRoutesTable();
+  renderRouteStrip();
   renderDetail();
   renderQuotes();
   loadFares(routeId);
   if (openRoutes) {
     showTab("routes");
     history.replaceState(null, "", "#routes");
+  }
+}
+
+function showTab(tab) {
+  state.tab = tab;
+  document.querySelectorAll(".tab").forEach((btn) => {
+    btn.classList.toggle("is-on", btn.dataset.tab === tab);
+  });
+  document.querySelectorAll(".view").forEach((section) => {
+    section.hidden = section.dataset.view !== tab;
+  });
+  if (tab === "live") renderLive();
+  if (tab === "routes") {
+    renderRouteStrip();
+    renderDetail();
   }
 }
 
@@ -280,22 +571,39 @@ function bind() {
       history.replaceState(null, "", tab === "home" ? location.pathname : `#${tab}`);
     });
   });
-  document.querySelector("#route-table tbody").addEventListener("click", (event) => {
-    const tr = event.target.closest("tr[data-route]");
-    if (!tr) return;
-    selectRoute(tr.dataset.route, { openRoutes: true });
-  });
-  document.getElementById("quote-route").addEventListener("change", (event) => {
-    selectRoute(event.target.value);
+  document.getElementById("route-strip").addEventListener("click", (event) => {
+    const btn = event.target.closest("[data-route]");
+    if (!btn) return;
+    selectRoute(btn.dataset.route);
   });
   document.getElementById("fare-filters").addEventListener("click", (event) => {
     const btn = event.target.closest("[data-filter]");
     if (!btn) return;
     state.fareFilter = btn.dataset.filter;
-    document.querySelectorAll("#fare-filters .chip-btn").forEach((node) => {
+    document.querySelectorAll("#fare-filters .chip").forEach((node) => {
       node.classList.toggle("is-on", node === btn);
     });
     renderQuotes();
+  });
+  document.getElementById("live-filters").addEventListener("click", (event) => {
+    const btn = event.target.closest("[data-live-filter]");
+    if (!btn) return;
+    state.liveFilter = btn.dataset.liveFilter;
+    document.querySelectorAll("#live-filters .chip").forEach((node) => {
+      node.classList.toggle("is-on", node === btn);
+    });
+    renderLive();
+  });
+  document.getElementById("proof-route").addEventListener("change", (event) => {
+    loadProof(event.target.value);
+  });
+  document.querySelectorAll("[data-go]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const tab = btn.getAttribute("data-go");
+      if (!TABS.includes(tab)) return;
+      showTab(tab);
+      history.replaceState(null, "", tab === "home" ? location.pathname : `#${tab}`);
+    });
   });
 }
 
@@ -311,11 +619,13 @@ async function boot() {
     document.getElementById("main").hidden = false;
     bind();
     renderHome();
-    renderRoutesTable();
+    renderRouteStrip();
     renderDetail();
-    renderAbout();
+    renderLive();
+    renderImprovements();
     showTab(state.tab);
     await loadFares(state.routeId);
+    await loadProof(state.proofRouteId);
   } catch (err) {
     document.getElementById("boot").hidden = true;
     const crash = document.getElementById("crash");
