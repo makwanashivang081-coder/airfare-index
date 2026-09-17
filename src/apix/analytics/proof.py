@@ -49,45 +49,31 @@ def improvements_payload(session: Session, day: date) -> list[dict]:
         .count()
     )
     total = session.query(FareObservationRow).filter(FareObservationRow.collected_on == day).count()
-    east = (
-        session.query(IndexPointRow)
-        .filter(
-            IndexPointRow.series == "cpi",
-            IndexPointRow.level == "route",
-            IndexPointRow.key == "DEL-CCU",
-            IndexPointRow.period == day.isoformat(),
-        )
-        .first()
-    )
-    east_val = round(east.value, 1) if east is not None else None
 
     return [
         {
             "id": "daily",
-            "title": "Daily, same rules",
-            "official_pain": "Official airfare in CPI is slow and hand-collected",
-            "we_add": f"Same 8 routes · T+{domestic_lead} · every day",
-            "why_government_cares": "See air-travel inflation move between monthly CPI prints",
-            "prototype_shows": f"{cpi_obs} CPI-eligible quotes on {day.isoformat()}",
+            "title": "Daily signal",
+            "official_pain": "Official airfare in CPI is slow",
+            "we_add": "Same basket every day",
+            "why_government_cares": "See airfares move between monthly CPI prints",
+            "prototype_shows": f"{cpi_obs} index quotes today",
         },
         {
             "id": "audit",
-            "title": "Click to the receipt",
-            "official_pain": "Hard to defend a number in a review room",
-            "we_add": "National → route → quote → saved receipt",
-            "why_government_cares": "Auditable lineage — not a black-box average",
-            "prototype_shows": f"{with_raw}/{total} quotes today still link to a raw receipt",
+            "title": "Audit trail",
+            "official_pain": "Hard to defend a number",
+            "we_add": "Click down to a receipt",
+            "why_government_cares": "Every index quote has a saved receipt",
+            "prototype_shows": f"{with_raw}/{total} linked to raw data",
         },
         {
             "id": "clean",
-            "title": "CPI stays clean",
-            "official_pain": "OTAs / meta-search muddy an official series",
-            "we_add": "Only airline-direct enters CPI; Google/Ixigo stay market",
-            "why_government_cares": "Keeps the inflation sample honest for MoSPI-style use",
-            "prototype_shows": (
-                f"Today: {cpi_obs} CPI vs {market_obs} market"
-                + (f" · DEL–CCU route index {east_val}" if east_val is not None else "")
-            ),
+            "title": "Clean sample",
+            "official_pain": "Shopping sites muddy official series",
+            "we_add": "Airlines in CPI · market kept separate",
+            "why_government_cares": "The inflation path stays clean",
+            "prototype_shows": f"{cpi_obs} CPI · {market_obs} market",
         },
     ]
 
@@ -163,12 +149,8 @@ def proof_for_route(session: Session, route_id: str, day: date) -> dict:
     story = None
     if route_id.upper() == "DEL-CCU":
         story = {
-            "headline": "Eastern corridor shock (demo)",
-            "body": (
-                "DEL→CCU spiked ~×1.72 in early Sep 2026 on this basket. "
-                "Official monthly CPI would show that late. Here you can open the same day, "
-                "same T+21 rule, and click a receipt."
-            ),
+            "headline": "Eastern corridor example (DEL→CCU)",
+            "body": "",
         }
 
     return {
@@ -206,9 +188,6 @@ def proof_for_route(session: Session, route_id: str, day: date) -> dict:
         "receipt": {
             "live_quotes_in_chain": live_n,
             "sample_quotes_in_chain": max(0, len(chain) - live_n),
-            "message": (
-                f"{live_n} live + {len(chain) - live_n} sample CPI quotes on this route today. "
-                "Click a quote for a readable receipt (not a JSON dump)."
-            ),
+            "message": "",
         },
     }

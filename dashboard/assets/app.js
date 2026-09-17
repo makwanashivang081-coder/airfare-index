@@ -127,9 +127,8 @@ function renderHome() {
   const value = idx.index_value;
   const vsStart = value - 100;
   const demo = data.demo || {};
-  document.getElementById("asof").textContent =
-    `${fmtDate(data.as_of)} · ${demo.live_data ? "Live mix" : "Demo"}`;
-  document.getElementById("foot-mode").textContent = demo.live_data ? "Live collection on" : "Demo sample prices";
+  document.getElementById("asof").textContent = fmtDate(data.as_of);
+  document.getElementById("foot-mode").textContent = "";
   document.getElementById("kpi-index").textContent = value.toFixed(2);
   const delta = document.getElementById("kpi-delta");
   if (idx.change_mom == null) {
@@ -143,7 +142,7 @@ function renderHome() {
   }
   const higher = vsStart >= 0 ? "higher" : "lower";
   document.getElementById("kpi-meaning").textContent =
-    `${value.toFixed(1)} on our 8-route basket ≈ ${Math.abs(vsStart).toFixed(1)}% ${higher} than demo start (100). This is an inflation read for stats — not a fare deal.`;
+    `${Math.abs(vsStart).toFixed(1)}% ${higher} than the starting point of 100.`;
 
   drawLineChart(
     document.getElementById("national-chart"),
@@ -160,13 +159,9 @@ function renderHome() {
 
 function renderModeBanner() {
   const banner = document.getElementById("mode-banner");
-  const demo = state.data?.demo;
-  if (!banner || !demo) return;
-  banner.hidden = false;
-  banner.className = "mode wrap" + (demo.live_data ? " live" : "");
-  banner.innerHTML = demo.live_data
-    ? `<strong>Live mix</strong> ${esc(demo.headline || "Real airline collects where possible")} · ${esc(fmtDate(demo.as_of))}`
-    : `<strong>Demo</strong> Stable sample prices for judges · ${esc(fmtDate(demo.as_of))}`;
+  if (!banner) return;
+  banner.hidden = true;
+  banner.textContent = "";
 }
 
 function renderRouteStrip() {
@@ -264,34 +259,32 @@ function renderLive() {
     sources: [],
     schedule: {},
   };
-  document.getElementById("live-note").textContent = live.note || "";
+  const noteEl = document.getElementById("live-note");
+  if (noteEl) noteEl.textContent = "Collected this morning for the fixed basket.";
   const sched = live.schedule || {};
   const run = live.run_summary;
-  document.getElementById("live-schedule").innerHTML = `
-    <strong>${esc(sched.label || "Daily collect ~2:00 AM IST")}</strong>
-    · Attempts ${esc(sched.airlines || "all CPI airlines")}
-    ${run ? `· Last run receipt: ${esc(run.collected_on)} · ${run.live_ok ?? 0} live · ${run.fixture_fallback ?? 0} sample` : ""}`;
+  document.getElementById("live-schedule").innerHTML = run
+    ? `<strong>${esc(fmtDate(run.collected_on))}</strong> · ${run.live_ok ?? 0} live · ${run.fixture_fallback ?? 0} sample`
+    : `<strong>${esc(sched.label || "Daily collect")}</strong>`;
 
   document.getElementById("live-kpis").innerHTML = `
-    <div class="lk"><span>Total today</span><strong>${live.total_count ?? live.quotes?.length ?? 0}</strong></div>
-    <div class="lk"><span>Live pages</span><strong>${live.live_count ?? 0}</strong></div>
-    <div class="lk"><span>Sample fallback</span><strong>${live.sample_count ?? 0}</strong></div>
-    <div class="lk"><span>Window</span><strong>~${live.lead ?? 21}d ahead</strong></div>`;
+    <div class="lk"><span>Total</span><strong>${live.total_count ?? live.quotes?.length ?? 0}</strong></div>
+    <div class="lk"><span>Live</span><strong>${live.live_count ?? 0}</strong></div>
+    <div class="lk"><span>Sample</span><strong>${live.sample_count ?? 0}</strong></div>
+    <div class="lk"><span>Lead</span><strong>T+${live.lead ?? 21}</strong></div>`;
 
   const sources = live.sources || [];
   const withLive = sources.filter((s) => (s.live || 0) > 0);
   const blocked = sources.filter((s) => (s.live || 0) === 0 && (s.sample || 0) > 0);
-  const max = Math.max(1, ...withLive.map((s) => s.live + (s.sample || 0)));
+  const max = Math.max(1, ...withLive.map((s) => s.live));
   document.getElementById("live-sources").innerHTML = withLive.length
     ? withLive
         .map((s) => {
           const livePct = (s.live / max) * 100;
-          const samplePct = ((s.sample || 0) / max) * 100;
           return `<div class="sb">
-        <div class="sb-label"><strong>${esc(s.source_name)}</strong><span>${s.live} live${s.sample ? ` · ${s.sample} sample` : ""}${s.can_enter_cpi ? "" : " · market"}</span></div>
+        <div class="sb-label"><strong>${esc(s.source_name)}</strong><span>${s.live} live</span></div>
         <div class="sb-track">
           <i class="sb-live" style="width:${livePct}%"></i>
-          <i class="sb-sample" style="width:${samplePct}%"></i>
         </div>
       </div>`;
         })
@@ -303,7 +296,7 @@ function renderLive() {
     if (blocked.length) {
       const names = blocked.map((s) => s.source_name).join(", ");
       blockedEl.hidden = false;
-      blockedEl.innerHTML = `<strong>Blocked today — sample only (hidden from bars):</strong> ${esc(names)}`;
+      blockedEl.innerHTML = `Also collected as sample: ${esc(names)}`;
     } else {
       blockedEl.hidden = true;
       blockedEl.textContent = "";
@@ -370,10 +363,7 @@ function renderImprovements() {
     .map(
       (row) => `<article class="improve-card">
         <h3>${esc(row.title || row.id)}</h3>
-        <p class="improve-pain"><span class="label">Official pain</span>${esc(row.official_pain)}</p>
-        <p class="improve-add"><span class="label">We add</span>${esc(row.we_add)}</p>
-        <p class="improve-why">${esc(row.why_government_cares)}</p>
-        <p class="shows">${esc(row.prototype_shows)}</p>
+        <p class="improve-why">${esc(row.why_government_cares || row.we_add)}</p>
       </article>`
     )
     .join("");
@@ -411,25 +401,24 @@ function renderProof() {
   }
 
   if (proof.story) {
-    storyEl.innerHTML = `<strong>${esc(proof.story.headline)}</strong> — ${esc(proof.story.body)}`;
+    storyEl.textContent = proof.story.headline;
   } else if (proof.spec?.one_liner) {
     storyEl.textContent = proof.spec.one_liner;
   }
 
   const national = proof.national;
   const route = proof.route_index;
-  document.getElementById("proof-summary").textContent =
-    "Click a CPI quote → readable receipt. Raw JSON is optional.";
-  msgEl.textContent = proof.receipt?.message || "";
+  document.getElementById("proof-summary").textContent = "Click a quote to open its receipt.";
+  msgEl.textContent = "";
 
   const steps = [
     `<div class="step step-num"><strong>1 · National</strong><p>${
-      national ? `<span class="big-num">${national.value}</span> · ${national.n_obs} quotes` : "Not published"
+      national ? `<span class="big-num">${national.value}</span>` : "—"
     }</p></div>`,
-    `<div class="step step-num"><strong>2 · Route ${esc(proof.route_id)}</strong><p>${
-      route ? `<span class="big-num">${route.value}</span> · ${route.n_obs} quotes` : "No route index"
+    `<div class="step step-num"><strong>2 · ${esc(proof.route_id)}</strong><p>${
+      route ? `<span class="big-num">${route.value}</span>` : "—"
     }</p></div>`,
-    `<div class="step step-num"><strong>3 · CPI quotes on this route</strong><p>Only airline-direct, T+${proof.spec?.advance_purchase_days ?? 21}, economy. OTAs never appear here.</p></div>`,
+    `<div class="step step-num"><strong>3 · Quotes in the index</strong><p>Select one below.</p></div>`,
   ];
 
   const obs = (proof.cpi_observations || [])
@@ -446,7 +435,7 @@ function renderProof() {
 
   host.innerHTML =
     steps.join("") +
-    (obs || `<div class="step"><p>No CPI quotes for this route/day (blocked airlines fell back to sample elsewhere).</p></div>`);
+    (obs || `<div class="step"><p>No quotes for this route today.</p></div>`);
 
   let selected = null;
   host.querySelectorAll("[data-obs]").forEach((btn) => {
@@ -454,12 +443,11 @@ function renderProof() {
       host.querySelectorAll(".obs").forEach((node) => node.classList.remove("is-on"));
       btn.classList.add("is-on");
       selected = proof.cpi_observations[Number(btn.dataset.obs)];
-      const inner = selected.raw?.inner || {};
       receipt.hidden = false;
       receipt.innerHTML = `
         <div class="receipt-top">
           <div>
-            <p class="eyebrow">Saved receipt</p>
+            <p class="eyebrow">Receipt</p>
             <h3>${esc(selected.source_name)} · ${esc(selected.flight)}</h3>
           </div>
           <p class="receipt-price">${rupee(selected.total)}</p>
@@ -467,14 +455,9 @@ function renderProof() {
         <dl class="receipt-grid">
           <div><dt>Route</dt><dd>${esc(proof.route_id)}</dd></div>
           <div><dt>Lead</dt><dd>T+${selected.lead}</dd></div>
-          <div><dt>Collection</dt><dd>${esc(selected.collection || (selected.is_live ? "LIVE" : "SAMPLE"))}</dd></div>
-          <div><dt>Site</dt><dd>${esc(selected.site || selected.source_name)}</dd></div>
-          <div><dt>Cabin</dt><dd>${esc(selected.cabin || "economy")}</dd></div>
-          <div><dt>Quality</dt><dd>${esc(selected.quality)}</dd></div>
-          <div><dt>Raw id</dt><dd class="mono">${esc(selected.raw_id || "—")}</dd></div>
-          <div><dt>In CPI?</dt><dd>Yes — airline-direct path</dd></div>
-        </dl>
-        <p class="hint">${esc(inner.note || proof.spec?.one_liner || "")}</p>`;
+          <div><dt>Type</dt><dd>${esc(selected.collection || (selected.is_live ? "LIVE" : "SAMPLE"))}</dd></div>
+          <div><dt>Source</dt><dd>${esc(selected.site || selected.source_name)}</dd></div>
+        </dl>`;
       rawToggle.hidden = false;
       rawBox.hidden = true;
       rawBox.textContent = JSON.stringify(

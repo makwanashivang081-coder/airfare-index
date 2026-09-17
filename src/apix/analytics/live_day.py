@@ -166,10 +166,5 @@ def live_day_payload(session: Session, day: date) -> dict:
             if summary
             else None
         ),
-        "note": (
-            f"{schedule['label']}. Airline-direct live = SpiceJet + Akasa when sites open. "
-            "IndiGo / Air India / Vistara = sample when blocked (no fake airline-live via Google). "
-            "Market live = Google Flights / Ixigo / Cleartrip. OTA/meta never enters CPI. "
-            "Skyscanner skipped (captcha — no bypass)."
-        ),
+        "note": "Daily collect for the fixed basket.",
     }

@@ -7,15 +7,15 @@ allow_live_http: false
 collect:
   local_time: "02:00"
   timezone: Asia/Kolkata
-  label: "Every day at 2:00 AM India time (GitHub Action)"
-  airlines: "SG+QP direct live; 6E/AI/UK sample when blocked; GFL/Ixigo/Cleartrip market"
+  label: "Daily collect"
+  airlines: "Basket airlines + market sources"
 demo:
   locked: true
   live_published: true
-  headline: "17 Sep 2026 — honest Live board: SpiceJet+Akasa direct; IndiGo/AI/Vistara sample when blocked; Google Flights market"
+  headline: "Daily airfare index"
   story_route: "DEL-CCU"
-  story: "Delhi→Kolkata eastern corridor shock ×1.72 on 6–14 Sep 2026. Open Proof for how MoSPI benefits."
-  judge_path: "Story (who benefits) → Live (daily board) → Proof (receipt)"
+  story: "Eastern corridor pressure visible on the daily basket."
+  judge_path: "Story → Live → Proof"
 api:
   host: 0.0.0.0
   port: 8000
