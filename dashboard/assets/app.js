@@ -55,15 +55,24 @@ function drawLineChart(host, points, opts = {}) {
       ? [points[0], { ...points[0], label: points[0].label, fullLabel: points[0].fullLabel }]
       : points;
   const width = 640;
-  const height = opts.height || 220;
-  const pad = { l: opts.padL || 56, r: 16, t: 16, b: 28 };
+  const height = opts.height || 240;
+  const pad = { l: opts.padL || 58, r: 18, t: 28, b: 30 };
   const ys = series.map((p) => p.y).filter((v) => Number.isFinite(v));
   if (ys.length < 1) {
     host.innerHTML = `<p class="chart-empty">No chart data for this day yet.</p>`;
     return;
   }
-  const min = opts.min != null ? opts.min : Math.min(...ys);
-  const max = opts.max != null ? opts.max : Math.max(...ys);
+  let min = opts.min != null ? opts.min : Math.min(...ys);
+  let max = opts.max != null ? opts.max : Math.max(...ys);
+  // Zoom into the data — never pin to zero or the line looks flat.
+  const rawSpan = max - min;
+  const padAmt = Math.max(rawSpan * 0.18, Math.abs(max) * 0.03, 1);
+  if (opts.min == null) min -= padAmt;
+  if (opts.max == null) max += padAmt;
+  if (opts.baseline != null) {
+    min = Math.min(min, opts.baseline - padAmt * 0.5);
+    max = Math.max(max, opts.baseline + padAmt * 0.5);
+  }
   const span = max - min || 1;
   const innerW = width - pad.l - pad.r;
   const innerH = height - pad.t - pad.b;
@@ -90,6 +99,20 @@ function drawLineChart(host, points, opts = {}) {
     const y = yAt(opts.baseline);
     baseline = `<line class="base" x1="${pad.l}" x2="${width - pad.r}" y1="${y}" y2="${y}"></line>`;
   }
+  const hi = ys.indexOf(Math.max(...ys));
+  const lo = ys.indexOf(Math.min(...ys));
+  const showDots = series.length <= 36;
+  let dots = "";
+  if (showDots) {
+    series.forEach((p, i) => {
+      dots += `<circle class="dot-sm" r="3.2" cx="${xAt(i)}" cy="${yAt(p.y)}"></circle>`;
+    });
+  }
+  const fmt = opts.formatY || ((v) => String(v));
+  const callouts = `
+    <text class="callout hi" x="${xAt(hi)}" y="${yAt(series[hi].y) - 8}" text-anchor="middle">${esc(fmt(series[hi].y))}</text>
+    <text class="callout lo" x="${xAt(lo)}" y="${Math.min(height - 36, yAt(series[lo].y) + 16)}" text-anchor="middle">${esc(fmt(series[lo].y))}</text>
+  `;
   const wrap = document.createElement("div");
   wrap.className = "chart-wrap";
   wrap.innerHTML = `
@@ -97,13 +120,15 @@ function drawLineChart(host, points, opts = {}) {
       ${grid}${baseline}${xlabels}
       <polygon class="area" points="${area}"></polygon>
       <polyline class="line" points="${line}"></polyline>
-      <circle class="dot" r="4" cx="${xAt(series.length - 1)}" cy="${yAt(series[series.length - 1].y)}"></circle>
+      ${dots}
+      ${callouts}
+      <circle class="dot" r="5" cx="${xAt(series.length - 1)}" cy="${yAt(series[series.length - 1].y)}"></circle>
     </svg>
     <div class="tooltip"></div>`;
   host.appendChild(wrap);
   const svg = wrap.querySelector("svg");
   const tip = wrap.querySelector(".tooltip");
-  const dot = wrap.querySelector(".dot");
+  const dot = wrap.querySelector("circle.dot");
   svg.addEventListener("mousemove", (event) => {
     const box = svg.getBoundingClientRect();
     const ratio = (event.clientX - box.left) / box.width;
@@ -114,11 +139,62 @@ function drawLineChart(host, points, opts = {}) {
     tip.style.display = "block";
     tip.style.left = `${((xAt(i) / width) * 100).toFixed(2)}%`;
     tip.style.top = `${(yAt(p.y) / height) * 100}%`;
-    tip.textContent = `${p.fullLabel || p.label}  ·  ${opts.formatY ? opts.formatY(p.y) : p.y}`;
+    tip.textContent = `${p.fullLabel || p.label}  ·  ${fmt(p.y)}`;
   });
   svg.addEventListener("mouseleave", () => {
     tip.style.display = "none";
   });
+}
+
+function drawBarChart(host, points, opts = {}) {
+  host.innerHTML = "";
+  if (!points || !points.length) {
+    host.innerHTML = `<p class="chart-empty">No chart data for this day yet.</p>`;
+    return;
+  }
+  const width = 640;
+  const height = opts.height || 240;
+  const pad = { l: opts.padL || 58, r: 18, t: 28, b: 34 };
+  const ys = points.map((p) => p.y).filter((v) => Number.isFinite(v));
+  let min = Math.min(...ys);
+  let max = Math.max(...ys);
+  const rawSpan = max - min;
+  const padAmt = Math.max(rawSpan * 0.25, Math.abs(max) * 0.04, 50);
+  min = Math.max(0, min - padAmt);
+  max = max + padAmt * 0.4;
+  const span = max - min || 1;
+  const innerW = width - pad.l - pad.r;
+  const innerH = height - pad.t - pad.b;
+  const gap = 0.28;
+  const slot = innerW / points.length;
+  const barW = slot * (1 - gap);
+  const yAt = (v) => pad.t + (1 - (v - min) / span) * innerH;
+  const fmt = opts.formatY || ((v) => String(v));
+  let grid = "";
+  for (let i = 0; i <= 4; i += 1) {
+    const v = min + (span * i) / 4;
+    const y = yAt(v);
+    grid += `<line class="grid" x1="${pad.l}" x2="${width - pad.r}" y1="${y}" y2="${y}"></line>`;
+    grid += `<text class="axis" x="4" y="${y + 3}">${esc(fmt(v))}</text>`;
+  }
+  let bars = "";
+  let xlabels = "";
+  points.forEach((p, i) => {
+    const x = pad.l + i * slot + (slot - barW) / 2;
+    const y = yAt(p.y);
+    const h = pad.t + innerH - y;
+    const last = i === points.length - 1;
+    bars += `<rect class="bar ${last ? "is-now" : ""}" x="${x}" y="${y}" width="${barW}" height="${Math.max(2, h)}" rx="6"></rect>`;
+    bars += `<text class="bar-val" x="${x + barW / 2}" y="${y - 8}" text-anchor="middle">${esc(fmt(p.y))}</text>`;
+    xlabels += `<text class="axis" x="${x + barW / 2}" y="${height - 10}" text-anchor="middle">${esc(p.label)}</text>`;
+  });
+  const wrap = document.createElement("div");
+  wrap.className = "chart-wrap";
+  wrap.innerHTML = `
+    <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="${esc(opts.aria || "Bar chart")}">
+      ${grid}${bars}${xlabels}
+    </svg>`;
+  host.appendChild(wrap);
 }
 
 function renderHome() {
@@ -159,8 +235,8 @@ function renderHome() {
     label: h.period.slice(2),
     fullLabel: h.period,
   }));
-  drawLineChart(document.getElementById("monthly-cost-chart"), monthPts, {
-    height: 220,
+  drawBarChart(document.getElementById("monthly-cost-chart"), monthPts, {
+    height: 250,
     formatY: (v) => "₹" + Math.round(v).toLocaleString("en-IN"),
     aria: "Monthly typical ticket cost in rupees",
   });
@@ -172,7 +248,7 @@ function renderHome() {
     fullLabel: fmtDate(h.period),
   }));
   drawLineChart(document.getElementById("daily-cost-chart"), dayPts, {
-    height: 180,
+    height: 240,
     formatY: (v) => "₹" + Math.round(v).toLocaleString("en-IN"),
     aria: "Daily typical ticket cost in rupees",
   });
@@ -185,7 +261,7 @@ function renderHome() {
       label: h.period.slice(5),
       fullLabel: fmtDate(h.period),
     })),
-    { height: 160, baseline: 100, formatY: (v) => v.toFixed(1), aria: "Daily airfare index" }
+    { height: 220, baseline: 100, formatY: (v) => v.toFixed(1), aria: "Daily airfare index" }
   );
   renderModeBanner();
 }
@@ -246,7 +322,7 @@ function renderDetail() {
       fullLabel: fmtDate(h.period),
     })),
     {
-      height: 200,
+      height: 240,
       baseline: 100,
       formatY: (v) => v.toFixed(1),
       aria: `Route inflation index ${row.id}`,

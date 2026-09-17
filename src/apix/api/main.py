@@ -37,6 +37,40 @@ app.add_middleware(
 _ready = False
 
 
+def _basket_cost_series(session: Session) -> tuple[list[dict], list[dict], float | None]:
+    """Real median CPI-sample fares by day/month — money households actually face."""
+    from sqlalchemy import func
+
+    daily_rows = (
+        session.query(
+            FareObservationRow.collected_on,
+            func.count().label("n"),
+            func.avg(FareObservationRow.total_price).label("avg_price"),
+        )
+        .filter(FareObservationRow.can_enter_cpi == 1)
+        .group_by(FareObservationRow.collected_on)
+        .order_by(FareObservationRow.collected_on)
+        .all()
+    )
+    cost_daily: list[dict] = []
+    month_bucket: dict[str, list[float]] = {}
+    for day, n, avg_price in daily_rows:
+        if avg_price is None or n < 1:
+            continue
+        inr = round(float(avg_price), 0)
+        period = day.isoformat()
+        cost_daily.append({"period": period, "inr": inr, "n_obs": int(n)})
+        mk = period[:7]
+        month_bucket.setdefault(mk, []).append(inr)
+    cost_monthly = [
+        {"period": mk, "inr": round(sum(vals) / len(vals), 0), "n_obs": len(vals)}
+        for mk, vals in sorted(month_bucket.items())
+        if vals
+    ]
+    typical = cost_daily[-1]["inr"] if cost_daily else None
+    return cost_daily, cost_monthly, typical
+
+
 def _boot() -> Session:
     global _ready
     session = get_session()
@@ -392,47 +426,37 @@ def overview(date: str = Query(AS_OF.isoformat())) -> dict:
         proof = proof_for_route(session, "DEL-CCU", day)
         lock = demo_lock()
         live = live_day_payload(session, day)
-        # Translate index → approx ₹ using today's basket median as the money anchor.
-        # Fail closed: no invented fares when median or index is missing.
+        cost_daily, cost_monthly, typical_from_obs = _basket_cost_series(session)
+        # Prefer real observed basket averages; fall back to index-scaled median.
+        typical_ticket = typical_from_obs or (round(realtime_median, 0) if realtime_median else None)
         index_now = float(idx.get("index_value") or 0)
-        cost_monthly: list[dict] = []
-        cost_daily: list[dict] = []
-        if realtime_median and index_now > 0:
-            for row in monthly:
-                if row["value"] and row["value"] > 0:
-                    cost_monthly.append(
-                        {
-                            "period": row["period"],
-                            "inr": round(realtime_median * (row["value"] / index_now), 0),
-                            "index": row["value"],
-                        }
-                    )
+        if not cost_daily and realtime_median and index_now > 0:
             for row in history["points"][-90:]:
                 if row.get("value") and row["value"] > 0:
                     cost_daily.append(
                         {
                             "period": row["period"],
                             "inr": round(realtime_median * (row["value"] / index_now), 0),
-                            "index": row["value"],
+                            "n_obs": row.get("n_obs") or 0,
                         }
                     )
-            # Ensure today sits on the daily series even if history lags.
-            if not cost_daily or cost_daily[-1]["period"] != day.isoformat():
-                cost_daily.append(
-                    {
-                        "period": day.isoformat(),
-                        "inr": round(realtime_median, 0),
-                        "index": index_now,
-                    }
-                )
+            for row in monthly:
+                if row["value"] and row["value"] > 0:
+                    cost_monthly.append(
+                        {
+                            "period": row["period"],
+                            "inr": round(realtime_median * (row["value"] / index_now), 0),
+                            "n_obs": row.get("n_obs") or 0,
+                        }
+                    )
         return {
             "as_of": day.isoformat(),
             "demo": lock,
             "index": idx,
             "realtime_median_t7": realtime_median,
-            "typical_ticket_inr": round(realtime_median, 0) if realtime_median else None,
+            "typical_ticket_inr": typical_ticket,
             "cost_monthly": cost_monthly,
-            "cost_daily": cost_daily,
+            "cost_daily": cost_daily[-60:],
             "market": market,
             "regions": region_payload,
             "events": events,
@@ -457,7 +481,7 @@ def overview(date: str = Query(AS_OF.isoformat())) -> dict:
                 }
                 for s in sources
             ],
-            "history": history["points"][-90:],
+            "history": history["points"][-60:],
         }
     finally:
         session.close()

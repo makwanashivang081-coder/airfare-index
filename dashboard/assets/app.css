@@ -241,17 +241,24 @@ h3 { margin: 0 0 6px; font-size: 0.95rem; color: var(--navy); }
   border: 1px solid var(--line);
 }
 
-.chart { min-height: 210px; position: relative; }
-.chart.short { min-height: 180px; }
+.chart { min-height: 240px; position: relative; }
+.chart.short { min-height: 210px; }
 .chart-wrap { position: relative; }
 .chart-empty { margin: 0; color: var(--muted); padding: 48px 8px; text-align: center; }
 .chart svg { width: 100%; height: auto; display: block; }
 .chart .grid { stroke: #e4eeea; }
 .chart .axis { fill: var(--muted); font-size: 10px; font-family: var(--sans); }
-.chart .line { fill: none; stroke: var(--navy); stroke-width: 2.4; }
-.chart .area { fill: rgba(15, 118, 110, 0.10); }
+.chart .line { fill: none; stroke: var(--navy); stroke-width: 3; stroke-linejoin: round; stroke-linecap: round; }
+.chart .area { fill: rgba(15, 118, 110, 0.14); }
 .chart .base { stroke: #b7c7c2; stroke-dasharray: 4 4; }
 .chart .dot { fill: var(--accent); }
+.chart .dot-sm { fill: var(--navy); opacity: 0.55; }
+.chart .callout { font-size: 11px; font-family: var(--sans); font-weight: 650; }
+.chart .callout.hi { fill: #0f766e; }
+.chart .callout.lo { fill: #9a3412; }
+.chart .bar { fill: #c5ddd6; }
+.chart .bar.is-now { fill: var(--navy); }
+.chart .bar-val { fill: var(--navy); font-size: 11px; font-family: var(--sans); font-weight: 650; }
 .chart .tooltip {
   display: none;
   position: absolute;
