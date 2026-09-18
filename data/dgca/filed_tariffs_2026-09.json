@@ -1,0 +1,228 @@
+{
+  "as_of": "2026-09-01",
+  "source": "Airline DGCA tariff sheets (filed fare bands). Not a daily observation.",
+  "role": "validation_check_only",
+  "can_enter_cpi": false,
+  "notes": [
+    "Used to check whether observed basket fares sit inside filed airline bands.",
+    "Never feeds the CPI sample or Jevons index.",
+    "Tax buffer applied at check time because some sheets are base-fare oriented."
+  ],
+  "carriers": [
+    "6E",
+    "AI",
+    "SG"
+  ],
+  "routes": [
+    {
+      "airline": "6E",
+      "origin": "BLR",
+      "destination": "BOM",
+      "route_id": "BLR-BOM",
+      "filed_min_inr": 1000.0,
+      "filed_max_inr": 34650.0,
+      "min_ladder_n": 20,
+      "max_ladder_n": 20
+    },
+    {
+      "airline": "6E",
+      "origin": "BLR",
+      "destination": "DEL",
+      "route_id": "BLR-DEL",
+      "filed_min_inr": 1939.0,
+      "filed_max_inr": 27885.0,
+      "min_ladder_n": 20,
+      "max_ladder_n": 20
+    },
+    {
+      "airline": "6E",
+      "origin": "BLR",
+      "destination": "HYD",
+      "route_id": "BLR-HYD",
+      "filed_min_inr": 831.0,
+      "filed_max_inr": 20020.0,
+      "min_ladder_n": 20,
+      "max_ladder_n": 20
+    },
+    {
+      "airline": "6E",
+      "origin": "BLR",
+      "destination": "MAA",
+      "route_id": "BLR-MAA",
+      "filed_min_inr": 1511.0,
+      "filed_max_inr": 16115.0,
+      "min_ladder_n": 20,
+      "max_ladder_n": 20
+    },
+    {
+      "airline": "6E",
+      "origin": "BOM",
+      "destination": "DEL",
+      "route_id": "BOM-DEL",
+      "filed_min_inr": 3500.0,
+      "filed_max_inr": 23100.0,
+      "min_ladder_n": 20,
+      "max_ladder_n": 20
+    },
+    {
+      "airline": "6E",
+      "origin": "BOM",
+      "destination": "HYD",
+      "route_id": "BOM-HYD",
+      "filed_min_inr": 1250.0,
+      "filed_max_inr": 24200.0,
+      "min_ladder_n": 20,
+      "max_ladder_n": 20
+    },
+    {
+      "airline": "6E",
+      "origin": "CCU",
+      "destination": "DEL",
+      "route_id": "CCU-DEL",
+      "filed_min_inr": 3409.0,
+      "filed_max_inr": 22440.0,
+      "min_ladder_n": 19,
+      "max_ladder_n": 19
+    },
+    {
+      "airline": "6E",
+      "origin": "DEL",
+      "destination": "MAA",
+      "route_id": "DEL-MAA",
+      "filed_min_inr": 2500.0,
+      "filed_max_inr": 30574.0,
+      "min_ladder_n": 20,
+      "max_ladder_n": 20
+    },
+    {
+      "airline": "AI",
+      "origin": "BLR",
+      "destination": "BOM",
+      "route_id": "BLR-BOM",
+      "filed_min_inr": 1030.0,
+      "filed_max_inr": 44690.0,
+      "min_ladder_n": 13,
+      "max_ladder_n": 13
+    },
+    {
+      "airline": "AI",
+      "origin": "BLR",
+      "destination": "DEL",
+      "route_id": "BLR-DEL",
+      "filed_min_inr": 1580.0,
+      "filed_max_inr": 66640.0,
+      "min_ladder_n": 13,
+      "max_ladder_n": 13
+    },
+    {
+      "airline": "AI",
+      "origin": "BLR",
+      "destination": "HYD",
+      "route_id": "BLR-HYD",
+      "filed_min_inr": 420.0,
+      "filed_max_inr": 35250.0,
+      "min_ladder_n": 13,
+      "max_ladder_n": 13
+    },
+    {
+      "airline": "AI",
+      "origin": "BLR",
+      "destination": "MAA",
+      "route_id": "BLR-MAA",
+      "filed_min_inr": 400.0,
+      "filed_max_inr": 28630.0,
+      "min_ladder_n": 13,
+      "max_ladder_n": 13
+    },
+    {
+      "airline": "AI",
+      "origin": "BOM",
+      "destination": "DEL",
+      "route_id": "BOM-DEL",
+      "filed_min_inr": 2080.0,
+      "filed_max_inr": 56550.0,
+      "min_ladder_n": 13,
+      "max_ladder_n": 13
+    },
+    {
+      "airline": "AI",
+      "origin": "BOM",
+      "destination": "HYD",
+      "route_id": "BOM-HYD",
+      "filed_min_inr": 1280.0,
+      "filed_max_inr": 35210.0,
+      "min_ladder_n": 13,
+      "max_ladder_n": 13
+    },
+    {
+      "airline": "AI",
+      "origin": "CCU",
+      "destination": "DEL",
+      "route_id": "CCU-DEL",
+      "filed_min_inr": 1699.0,
+      "filed_max_inr": 53120.0,
+      "min_ladder_n": 13,
+      "max_ladder_n": 13
+    },
+    {
+      "airline": "AI",
+      "origin": "DEL",
+      "destination": "MAA",
+      "route_id": "DEL-MAA",
+      "filed_min_inr": 2030.0,
+      "filed_max_inr": 53130.0,
+      "min_ladder_n": 13,
+      "max_ladder_n": 13
+    },
+    {
+      "airline": "SG",
+      "origin": "BLR",
+      "destination": "BOM",
+      "route_id": "BLR-BOM",
+      "filed_min_inr": 2300.0,
+      "filed_max_inr": 38500.0,
+      "min_ladder_n": 24,
+      "max_ladder_n": 24
+    },
+    {
+      "airline": "SG",
+      "origin": "BLR",
+      "destination": "DEL",
+      "route_id": "BLR-DEL",
+      "filed_min_inr": 6300.0,
+      "filed_max_inr": 44000.0,
+      "min_ladder_n": 24,
+      "max_ladder_n": 24
+    },
+    {
+      "airline": "SG",
+      "origin": "DEL",
+      "destination": "BOM",
+      "route_id": "DEL-BOM",
+      "filed_min_inr": 3500.0,
+      "filed_max_inr": 41500.0,
+      "min_ladder_n": 25,
+      "max_ladder_n": 25
+    },
+    {
+      "airline": "SG",
+      "origin": "DEL",
+      "destination": "CCU",
+      "route_id": "DEL-CCU",
+      "filed_min_inr": 4261.0,
+      "filed_max_inr": 41500.0,
+      "min_ladder_n": 25,
+      "max_ladder_n": 25
+    },
+    {
+      "airline": "SG",
+      "origin": "HYD",
+      "destination": "BOM",
+      "route_id": "HYD-BOM",
+      "filed_min_inr": 3413.0,
+      "filed_max_inr": 42000.0,
+      "min_ladder_n": 24,
+      "max_ladder_n": 24
+    }
+  ]
+}

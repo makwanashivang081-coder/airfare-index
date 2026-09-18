@@ -7,3 +7,5 @@ __pycache__/
 .vercel
 data/*
 !data/apix.db
+!data/dgca/
+!data/dgca/**/*.json
