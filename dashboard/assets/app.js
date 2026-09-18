@@ -537,6 +537,22 @@ function renderProof() {
   document.getElementById("proof-summary").textContent = "Click a quote to open its receipt.";
   msgEl.textContent = "";
 
+  const dgcaBox = document.getElementById("proof-dgca");
+  const dgca = proof.dgca || state.data.dgca;
+  if (dgcaBox) {
+    if (dgca && dgca.quotes_checked) {
+      dgcaBox.hidden = false;
+      const c = dgca.counts || {};
+      dgcaBox.innerHTML = `<strong>DGCA tariff check</strong>
+        <span>${esc(dgca.headline || "")}</span>
+        <span class="hint">${esc(dgca.one_liner || "")}
+        Sheet ${esc(dgca.tariff_sheet_as_of || "—")} · within ${c.within || 0} · below ${c.below_filed || 0} · above ${c.above_filed || 0} · no band ${c.no_tariff || 0}</span>`;
+    } else {
+      dgcaBox.hidden = true;
+      dgcaBox.innerHTML = "";
+    }
+  }
+
   const steps = [
     `<div class="step step-num"><strong>1 · National</strong><p>${
       national ? `<span class="big-num">${national.value}</span>` : "—"
@@ -548,15 +564,25 @@ function renderProof() {
   ];
 
   const obs = (proof.cpi_observations || [])
-    .map(
-      (o, i) => `<button type="button" class="obs ${o.is_live ? "is-live" : "is-sample"}" data-obs="${i}">
+    .map((o, i) => {
+      const dg = o.dgca_check || {};
+      const dgStatus = dg.status || "no_tariff";
+      const dgLabel =
+        dgStatus === "within"
+          ? "in band"
+          : dgStatus === "below_filed"
+            ? "below band"
+            : dgStatus === "above_filed"
+              ? "above band"
+              : "no band";
+      return `<button type="button" class="obs ${o.is_live ? "is-live" : "is-sample"}" data-obs="${i}">
         <span>${esc(o.source_name)} · ${esc(o.flight)}</span>
         <span class="badge ${o.is_live ? "live" : ""}">${o.is_live ? "live" : "sample"}</span>
-        <span>${o.lead}d</span>
+        <span class="badge dgca-${esc(dgStatus)}">${esc(dgLabel)}</span>
         <span class="num">${rupee(o.total)}</span>
         <span class="badge in">open</span>
-      </button>`
-    )
+      </button>`;
+    })
     .join("");
 
   host.innerHTML =
@@ -569,6 +595,7 @@ function renderProof() {
       host.querySelectorAll(".obs").forEach((node) => node.classList.remove("is-on"));
       btn.classList.add("is-on");
       selected = proof.cpi_observations[Number(btn.dataset.obs)];
+      const dg = selected.dgca_check || {};
       receipt.hidden = false;
       receipt.innerHTML = `
         <div class="receipt-top">
@@ -583,6 +610,12 @@ function renderProof() {
           <div><dt>Lead</dt><dd>T+${selected.lead}</dd></div>
           <div><dt>Type</dt><dd>${esc(selected.collection || (selected.is_live ? "LIVE" : "SAMPLE"))}</dd></div>
           <div><dt>Source</dt><dd>${esc(selected.site || selected.source_name)}</dd></div>
+          <div><dt>DGCA band</dt><dd>${
+            dg.filed_min_inr != null
+              ? `${rupee(dg.filed_min_inr)} – ${rupee(dg.filed_max_inr)}`
+              : "No filed band"
+          }</dd></div>
+          <div><dt>Check</dt><dd>${esc(dg.message || "—")}</dd></div>
         </dl>`;
       rawToggle.hidden = false;
       rawBox.hidden = true;
@@ -593,6 +626,7 @@ function renderProof() {
           source: selected.source_name,
           collection: selected.collection,
           site: selected.site,
+          dgca_check: selected.dgca_check,
           raw: selected.raw,
         },
         null,

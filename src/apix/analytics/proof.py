@@ -5,6 +5,7 @@ from datetime import date
 
 from sqlalchemy.orm import Session
 
+from apix.analytics.dgca_bounds import check_price, dgca_check_for_day
 from apix.analytics.live_day import is_live_payload
 from apix.common.config import methodology
 from apix.db.models import FareObservationRow, IndexPointRow, RawObservationRow, SourceRow
@@ -75,6 +76,14 @@ def improvements_payload(session: Session, day: date) -> list[dict]:
             "why_government_cares": "Policy and stats teams can trust what enters the index",
             "prototype_shows": f"{cpi_obs} CPI · {market_obs} market",
         },
+        {
+            "id": "dgca",
+            "title": "DGCA tariff check",
+            "official_pain": "Hard to know if a quote is plausible",
+            "we_add": "Filed airline min/max bands",
+            "why_government_cares": "Regulator sheets check our daily quotes — they never enter CPI",
+            "prototype_shows": "Sep-2026 tariff sheets on basket routes",
+        },
     ]
 
 
@@ -136,6 +145,9 @@ def proof_for_route(session: Session, route_id: str, day: date) -> dict:
                 "site": inner.get("site"),
                 "collection": "LIVE" if live else "SAMPLE",
                 "cabin": inner.get("cabin") or row.cabin,
+                "dgca_check": check_price(
+                    row.airline_code, row.origin, row.destination, float(row.total_price)
+                ),
                 "raw": {
                     "storage_path": raw.storage_path if raw else None,
                     "parser_version": raw.parser_version if raw else None,
@@ -152,6 +164,8 @@ def proof_for_route(session: Session, route_id: str, day: date) -> dict:
             "headline": "Eastern corridor example (DEL→CCU)",
             "body": "",
         }
+
+    dgca = dgca_check_for_day(session, day, route_id=f"{origin}-{dest}")
 
     return {
         "as_of": day.isoformat(),
@@ -185,6 +199,7 @@ def proof_for_route(session: Session, route_id: str, day: date) -> dict:
             else None
         ),
         "cpi_observations": chain,
+        "dgca": dgca,
         "receipt": {
             "live_quotes_in_chain": live_n,
             "sample_quotes_in_chain": max(0, len(chain) - live_n),

@@ -514,7 +514,7 @@ h3 { margin: 0 0 6px; font-size: 0.95rem; color: var(--navy); }
 
 .improve {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 12px;
   margin-top: 12px;
 }
@@ -546,6 +546,22 @@ h3 { margin: 0 0 6px; font-size: 0.95rem; color: var(--navy); }
 .improve-add { color: var(--ink); font-weight: 600; }
 .improve-why { color: var(--ink); }
 .improve .shows { color: var(--navy); font-size: 0.85rem; }
+
+.dgca-banner {
+  margin: 0 0 14px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: #f3faf7;
+  display: grid;
+  gap: 4px;
+  font-size: 0.92rem;
+}
+.dgca-banner strong { color: var(--navy); }
+.badge.dgca-within { background: #d8f3ea; color: #0f766e; }
+.badge.dgca-below_filed,
+.badge.dgca-above_filed { background: #ffe8d6; color: #9a3412; }
+.badge.dgca-no_tariff { background: #eef2f1; color: var(--muted); }
 
 .proof-hero .body { max-width: 40rem; }
 .receipt-banner {

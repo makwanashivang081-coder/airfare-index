@@ -10,6 +10,7 @@ from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 
 from apix.analytics.briefing import build_callouts, events_payload, public_methodology
+from apix.analytics.dgca_bounds import dgca_check_for_day
 from apix.analytics.live_day import _inner_payload, is_live_payload, live_day_payload
 from apix.analytics.phases import phases_status
 from apix.analytics.proof import improvements_payload, proof_for_route
@@ -426,6 +427,7 @@ def overview(date: str = Query(AS_OF.isoformat())) -> dict:
         proof = proof_for_route(session, "DEL-CCU", day)
         lock = demo_lock()
         live = live_day_payload(session, day)
+        dgca = dgca_check_for_day(session, day)
         cost_daily, cost_monthly, typical_from_obs = _basket_cost_series(session)
         # Prefer real observed basket averages; fall back to index-scaled median.
         typical_ticket = typical_from_obs or (round(realtime_median, 0) if realtime_median else None)
@@ -465,6 +467,7 @@ def overview(date: str = Query(AS_OF.isoformat())) -> dict:
             "monthly": monthly,
             "improvements": improvements,
             "proof": proof,
+            "dgca": dgca,
             "live": live,
             "phases": phases_status(),
             "sources": [

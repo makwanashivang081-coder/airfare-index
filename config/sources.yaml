@@ -120,4 +120,4 @@ sources:
     priority: 8
     can_enter_cpi: false
     allow_http: false
-    note: Validation / master-data reference. Not a daily scrape.
+    note: Filed tariff sheets (Sep-2026). Bounds-check only — never enters CPI sample.
